@@ -1,24 +1,16 @@
 import { useEffect, useState } from "react";
-
-declare global {
-  interface Window {
-    google?: typeof google;
-    __initGmap?: () => void;
-    __gmapReady?: boolean;
-    __gmapLoading?: boolean;
-  }
-}
+import { getGoogleMaps } from "@/lib/googleMapsTypes";
 
 const CALLBACK_NAME = "__initGmap";
 
 export function useGoogleMaps(): boolean {
   const [ready, setReady] = useState<boolean>(
-    typeof window !== "undefined" && !!window.google?.maps,
+    typeof window !== "undefined" && !!getGoogleMaps(),
   );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (window.google?.maps) {
+    if (getGoogleMaps()) {
       setReady(true);
       return;
     }

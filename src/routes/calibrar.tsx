@@ -6,12 +6,24 @@ import type { Street } from "@/data/defaultStreets";
 import { PROJECT_CENTER } from "@/data/defaultStreets";
 import type { LatLng } from "@/lib/geo";
 import { polylineLength } from "@/lib/geo";
+import {
+  getGoogleMaps,
+  type GoogleMapInstance,
+  type GoogleMapMouseEvent,
+  type GoogleMapsEventListener,
+  type GoogleMarkerInstance,
+  type GooglePolylineInstance,
+} from "@/lib/googleMapsTypes";
 
 export const Route = createFileRoute("/calibrar")({
   head: () => ({
     meta: [
       { title: "Calibrar ruas — Estaca GPS" },
       { name: "description", content: "Trace os eixos das ruas do projeto no mapa." },
+      { property: "og:title", content: "Calibrar ruas — Estaca GPS" },
+      { property: "og:description", content: "Trace os eixos das ruas do projeto no mapa." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -23,11 +35,11 @@ function CalibrarPage() {
   const [streets, setStreets] = useState<Street[]>(() => loadStreets());
   const [activeId, setActiveId] = useState<string>(streets[0]?.id ?? "");
   const mapDivRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const activePolyRef = useRef<google.maps.Polyline | null>(null);
-  const activeMarkersRef = useRef<google.maps.Marker[]>([]);
-  const otherLinesRef = useRef<google.maps.Polyline[]>([]);
-  const clickListenerRef = useRef<google.maps.MapsEventListener | null>(null);
+  const mapRef = useRef<GoogleMapInstance | null>(null);
+  const activePolyRef = useRef<GooglePolylineInstance | null>(null);
+  const activeMarkersRef = useRef<GoogleMarkerInstance[]>([]);
+  const otherLinesRef = useRef<GooglePolylineInstance[]>([]);
+  const clickListenerRef = useRef<GoogleMapsEventListener | null>(null);
   const [showJson, setShowJson] = useState(false);
   const [jsonText, setJsonText] = useState("");
 
@@ -48,8 +60,9 @@ function CalibrarPage() {
 
   // Init map
   useEffect(() => {
-    if (!mapsReady || !mapDivRef.current || mapRef.current) return;
-    mapRef.current = new google.maps.Map(mapDivRef.current, {
+    const maps = getGoogleMaps();
+    if (!mapsReady || !maps || !mapDivRef.current || mapRef.current) return;
+    mapRef.current = new maps.Map(mapDivRef.current, {
       center: PROJECT_CENTER,
       zoom: 17,
       mapTypeId: "hybrid",
@@ -61,9 +74,10 @@ function CalibrarPage() {
 
   // Map click → append point to active street
   useEffect(() => {
-    if (!mapRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
     if (clickListenerRef.current) clickListenerRef.current.remove();
-    clickListenerRef.current = mapRef.current.addListener("click", (e: google.maps.MapMouseEvent) => {
+    clickListenerRef.current = map.addListener("click", (e: GoogleMapMouseEvent) => {
       if (!e.latLng || !active) return;
       const pt: LatLng = { lat: e.latLng.lat(), lng: e.latLng.lng() };
       updateActive({ polyline: [...active.polyline, pt] });
@@ -76,18 +90,20 @@ function CalibrarPage() {
 
   // Draw other (non-active) streets faintly
   useEffect(() => {
-    if (!mapRef.current) return;
+    const maps = getGoogleMaps();
+    const map = mapRef.current;
+    if (!maps || !map) return;
     otherLinesRef.current.forEach((l) => l.setMap(null));
     otherLinesRef.current = [];
     for (const s of streets) {
       if (s.id === activeId) continue;
       if (s.polyline.length < 2) continue;
-      const line = new google.maps.Polyline({
+      const line = new maps.Polyline({
         path: s.polyline,
         strokeColor: "#64748b",
         strokeOpacity: 0.7,
         strokeWeight: 2,
-        map: mapRef.current,
+        map,
       });
       otherLinesRef.current.push(line);
     }
@@ -95,7 +111,9 @@ function CalibrarPage() {
 
   // Draw active street polyline + vertex markers
   useEffect(() => {
-    if (!mapRef.current) return;
+    const maps = getGoogleMaps();
+    const map = mapRef.current;
+    if (!maps || !map) return;
     if (activePolyRef.current) {
       activePolyRef.current.setMap(null);
       activePolyRef.current = null;
@@ -104,25 +122,25 @@ function CalibrarPage() {
     activeMarkersRef.current = [];
     if (!active) return;
     if (active.polyline.length >= 2) {
-      activePolyRef.current = new google.maps.Polyline({
+      activePolyRef.current = new maps.Polyline({
         path: active.polyline,
         strokeColor: "#facc15",
         strokeOpacity: 1,
         strokeWeight: 4,
-        map: mapRef.current,
+        map,
       });
     }
     active.polyline.forEach((p, i) => {
       const isStart = active.reversed ? i === active.polyline.length - 1 : i === 0;
       activeMarkersRef.current.push(
-        new google.maps.Marker({
+        new maps.Marker({
           position: p,
-          map: mapRef.current!,
+          map,
           label: isStart
             ? { text: "0", color: "#0f172a", fontWeight: "800" }
             : undefined,
           icon: {
-            path: google.maps.SymbolPath.CIRCLE,
+            path: maps.SymbolPath.CIRCLE,
             scale: isStart ? 9 : 5,
             fillColor: isStart ? "#facc15" : "#f8fafc",
             fillOpacity: 1,
