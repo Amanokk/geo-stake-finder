@@ -6,6 +6,13 @@ import { loadStreets } from "@/lib/streetsStore";
 import { projectOnPolyline, pointAtChainage, polylineLength, type LatLng } from "@/lib/geo";
 import type { Street } from "@/data/defaultStreets";
 import { PROJECT_CENTER } from "@/data/defaultStreets";
+import {
+  getGoogleMaps,
+  type GoogleCircleInstance,
+  type GoogleMapInstance,
+  type GoogleMarkerInstance,
+  type GooglePolylineInstance,
+} from "@/lib/googleMapsTypes";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -70,13 +77,13 @@ function Index() {
   const geo = useGeolocation(true);
   const [streets, setStreets] = useState<Street[]>(() => loadStreets());
   const mapDivRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const userMarkerRef = useRef<google.maps.Marker | null>(null);
-  const accuracyCircleRef = useRef<google.maps.Circle | null>(null);
-  const streetLinesRef = useRef<google.maps.Polyline[]>([]);
-  const highlightRef = useRef<google.maps.Polyline | null>(null);
-  const stakeMarkerRef = useRef<google.maps.Marker | null>(null);
-  const allStakesRef = useRef<google.maps.Marker[]>([]);
+  const mapRef = useRef<GoogleMapInstance | null>(null);
+  const userMarkerRef = useRef<GoogleMarkerInstance | null>(null);
+  const accuracyCircleRef = useRef<GoogleCircleInstance | null>(null);
+  const streetLinesRef = useRef<GooglePolylineInstance[]>([]);
+  const highlightRef = useRef<GooglePolylineInstance | null>(null);
+  const stakeMarkerRef = useRef<GoogleMarkerInstance | null>(null);
+  const allStakesRef = useRef<GoogleMarkerInstance[]>([]);
 
   // Reload streets when window regains focus (returning from calibration).
   useEffect(() => {
@@ -92,8 +99,9 @@ function Index() {
 
   // Initialize the map once.
   useEffect(() => {
-    if (!mapsReady || !mapDivRef.current || mapRef.current) return;
-    mapRef.current = new google.maps.Map(mapDivRef.current, {
+    const maps = getGoogleMaps();
+    if (!mapsReady || !maps || !mapDivRef.current || mapRef.current) return;
+    mapRef.current = new maps.Map(mapDivRef.current, {
       center: PROJECT_CENTER,
       zoom: 17,
       mapTypeId: "hybrid",
@@ -105,17 +113,19 @@ function Index() {
 
   // Draw all street axes.
   useEffect(() => {
-    if (!mapRef.current) return;
+    const maps = getGoogleMaps();
+    const map = mapRef.current;
+    if (!maps || !map) return;
     streetLinesRef.current.forEach((l) => l.setMap(null));
     streetLinesRef.current = [];
     for (const s of streets) {
       if (s.polyline.length < 2) continue;
-      const line = new google.maps.Polyline({
+      const line = new maps.Polyline({
         path: s.polyline,
         strokeColor: "#38bdf8",
         strokeOpacity: 0.85,
         strokeWeight: 3,
-        map: mapRef.current,
+        map,
       });
       streetLinesRef.current.push(line);
     }
@@ -123,7 +133,9 @@ function Index() {
 
   // Draw stake markers for every calibrated street.
   useEffect(() => {
-    if (!mapRef.current) return;
+    const maps = getGoogleMaps();
+    const map = mapRef.current;
+    if (!maps || !map) return;
     allStakesRef.current.forEach((m) => m.setMap(null));
     allStakesRef.current = [];
     for (const s of streets) {
@@ -135,9 +147,9 @@ function Index() {
         const pos = pointAtChainage(poly, i * s.spacing);
         if (!pos) continue;
         const num = s.startStake + i;
-        const marker = new google.maps.Marker({
+        const marker = new maps.Marker({
           position: pos,
-          map: mapRef.current,
+          map,
           label: {
             text: `E-${num}`,
             color: "#0f172a",
@@ -145,7 +157,7 @@ function Index() {
             fontSize: "11px",
           },
           icon: {
-            path: google.maps.SymbolPath.CIRCLE,
+            path: maps.SymbolPath.CIRCLE,
             scale: 10,
             fillColor: "#f8fafc",
             fillOpacity: 0.95,
@@ -162,13 +174,15 @@ function Index() {
 
   // Update user marker + accuracy circle.
   useEffect(() => {
-    if (!mapRef.current || !geo.position) return;
+    const maps = getGoogleMaps();
+    const map = mapRef.current;
+    if (!maps || !map || !geo.position) return;
     if (!userMarkerRef.current) {
-      userMarkerRef.current = new google.maps.Marker({
+      userMarkerRef.current = new maps.Marker({
         position: geo.position,
-        map: mapRef.current,
+        map,
         icon: {
-          path: google.maps.SymbolPath.CIRCLE,
+          path: maps.SymbolPath.CIRCLE,
           scale: 8,
           fillColor: "#22d3ee",
           fillOpacity: 1,
@@ -177,16 +191,16 @@ function Index() {
         },
         zIndex: 1000,
       });
-      mapRef.current.panTo(geo.position);
+      map.panTo(geo.position);
     } else {
       userMarkerRef.current.setPosition(geo.position);
     }
     if (geo.accuracy) {
       if (!accuracyCircleRef.current) {
-        accuracyCircleRef.current = new google.maps.Circle({
+        accuracyCircleRef.current = new maps.Circle({
           center: geo.position,
           radius: geo.accuracy,
-          map: mapRef.current,
+          map,
           fillColor: "#22d3ee",
           fillOpacity: 0.12,
           strokeColor: "#22d3ee",
@@ -202,7 +216,9 @@ function Index() {
 
   // Highlight matched street + stake marker.
   useEffect(() => {
-    if (!mapRef.current) return;
+    const maps = getGoogleMaps();
+    const map = mapRef.current;
+    if (!maps || !map) return;
     if (highlightRef.current) {
       highlightRef.current.setMap(null);
       highlightRef.current = null;
@@ -215,16 +231,16 @@ function Index() {
     const path = match.street.reversed
       ? [...match.street.polyline].reverse()
       : match.street.polyline;
-    highlightRef.current = new google.maps.Polyline({
+    highlightRef.current = new maps.Polyline({
       path,
       strokeColor: "#facc15",
       strokeOpacity: 1,
       strokeWeight: 5,
-      map: mapRef.current,
+      map,
     });
-    stakeMarkerRef.current = new google.maps.Marker({
+    stakeMarkerRef.current = new maps.Marker({
       position: match.snapped,
-      map: mapRef.current,
+      map,
       label: {
         text: `E-${match.estaca}`,
         color: "#0f172a",
@@ -232,7 +248,7 @@ function Index() {
         fontSize: "12px",
       },
       icon: {
-        path: google.maps.SymbolPath.CIRCLE,
+        path: maps.SymbolPath.CIRCLE,
         scale: 14,
         fillColor: "#facc15",
         fillOpacity: 1,
