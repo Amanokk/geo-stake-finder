@@ -246,6 +246,37 @@ function CalibrarPage() {
           </div>
         )}
 
+        {active && (
+          <div className="flex flex-wrap items-center gap-2 rounded border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs">
+            <span className="text-slate-400">Estaca conhecida:</span>
+            {active.anchor ? (
+              <span className="font-mono text-yellow-300">
+                E-{active.anchor.stake} @ {active.anchor.chainageM.toFixed(1)} m
+              </span>
+            ) : (
+              <span className="text-slate-500">— (usando "Estaca inicial")</span>
+            )}
+            <button
+              onClick={() => setAnchorMode((v) => !v)}
+              className={`ml-auto rounded px-3 py-1.5 ${
+                anchorMode
+                  ? "bg-yellow-400 text-slate-950"
+                  : "bg-slate-800 text-slate-200"
+              }`}
+            >
+              {anchorMode ? "Toque no ponto da esquina…" : "Definir estaca aqui"}
+            </button>
+            {active.anchor && (
+              <button
+                onClick={() => updateActive({ anchor: undefined })}
+                className="rounded bg-slate-800 px-3 py-1.5 text-slate-200"
+              >
+                Remover
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2 text-xs">
           <button
             onClick={() => active && updateActive({ polyline: active.polyline.slice(0, -1) })}
@@ -274,7 +305,9 @@ function CalibrarPage() {
           </div>
         )}
         <div className="pointer-events-none absolute left-3 top-3 rounded bg-slate-900/80 px-3 py-1.5 text-xs text-slate-200 backdrop-blur">
-          Toque no mapa para adicionar pontos ao eixo
+          {anchorMode
+            ? "Toque na esquina/ponto de estaca conhecida"
+            : "Toque no mapa para adicionar pontos ao eixo"}
         </div>
       </div>
 
