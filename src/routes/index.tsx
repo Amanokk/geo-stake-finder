@@ -76,6 +76,7 @@ function Index() {
   const streetLinesRef = useRef<google.maps.Polyline[]>([]);
   const highlightRef = useRef<google.maps.Polyline | null>(null);
   const stakeMarkerRef = useRef<google.maps.Marker | null>(null);
+  const allStakesRef = useRef<google.maps.Marker[]>([]);
 
   // Reload streets when window regains focus (returning from calibration).
   useEffect(() => {
