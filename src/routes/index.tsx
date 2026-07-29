@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { loadStreets } from "@/lib/streetsStore";
-import { projectOnPolyline, pointAtChainage, type LatLng } from "@/lib/geo";
+import { projectOnPolyline, pointAtChainage, polylineLength, type LatLng } from "@/lib/geo";
 import type { Street } from "@/data/defaultStreets";
 import { PROJECT_CENTER } from "@/data/defaultStreets";
 
@@ -76,6 +76,7 @@ function Index() {
   const streetLinesRef = useRef<google.maps.Polyline[]>([]);
   const highlightRef = useRef<google.maps.Polyline | null>(null);
   const stakeMarkerRef = useRef<google.maps.Marker | null>(null);
+  const allStakesRef = useRef<google.maps.Marker[]>([]);
 
   // Reload streets when window regains focus (returning from calibration).
   useEffect(() => {
@@ -117,6 +118,45 @@ function Index() {
         map: mapRef.current,
       });
       streetLinesRef.current.push(line);
+    }
+  }, [streets, mapsReady]);
+
+  // Draw stake markers for every calibrated street.
+  useEffect(() => {
+    if (!mapRef.current) return;
+    allStakesRef.current.forEach((m) => m.setMap(null));
+    allStakesRef.current = [];
+    for (const s of streets) {
+      if (s.polyline.length < 2) continue;
+      const poly = s.reversed ? [...s.polyline].reverse() : s.polyline;
+      const total = polylineLength(poly);
+      const count = Math.floor(total / s.spacing);
+      for (let i = 0; i <= count; i++) {
+        const pos = pointAtChainage(poly, i * s.spacing);
+        if (!pos) continue;
+        const num = s.startStake + i;
+        const marker = new google.maps.Marker({
+          position: pos,
+          map: mapRef.current,
+          label: {
+            text: `E-${num}`,
+            color: "#0f172a",
+            fontWeight: "700",
+            fontSize: "11px",
+          },
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: "#f8fafc",
+            fillOpacity: 0.95,
+            strokeColor: "#0f172a",
+            strokeWeight: 1.5,
+          },
+          zIndex: 500,
+          clickable: false,
+        });
+        allStakesRef.current.push(marker);
+      }
     }
   }, [streets, mapsReady]);
 
@@ -186,7 +226,7 @@ function Index() {
       position: match.snapped,
       map: mapRef.current,
       label: {
-        text: `E${match.estaca}`,
+        text: `E-${match.estaca}`,
         color: "#0f172a",
         fontWeight: "800",
         fontSize: "12px",
@@ -219,7 +259,7 @@ function Index() {
             </h1>
             <div className="mt-3 flex items-end gap-3">
               <div className="text-6xl font-black tabular-nums text-yellow-300 leading-none">
-                E{match.estaca}
+                E-{match.estaca}
               </div>
               <div className="pb-1 text-sm text-slate-300 tabular-nums">
                 {match.offset >= 0 ? "+" : ""}
