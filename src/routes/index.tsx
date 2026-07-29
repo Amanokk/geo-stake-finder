@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { loadStreets } from "@/lib/streetsStore";
-import { projectOnPolyline, pointAtChainage, type LatLng } from "@/lib/geo";
+import { projectOnPolyline, pointAtChainage, polylineLength, type LatLng } from "@/lib/geo";
 import type { Street } from "@/data/defaultStreets";
 import { PROJECT_CENTER } from "@/data/defaultStreets";
 
