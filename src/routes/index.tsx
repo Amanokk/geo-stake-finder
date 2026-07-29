@@ -259,7 +259,7 @@ function Index() {
             </h1>
             <div className="mt-3 flex items-end gap-3">
               <div className="text-6xl font-black tabular-nums text-yellow-300 leading-none">
-                E{match.estaca}
+                E-{match.estaca}
               </div>
               <div className="pb-1 text-sm text-slate-300 tabular-nums">
                 {match.offset >= 0 ? "+" : ""}
