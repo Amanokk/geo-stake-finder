@@ -5,7 +5,7 @@ import { loadStreets, saveStreets, resetStreets, exportJson } from "@/lib/street
 import type { Street } from "@/data/defaultStreets";
 import { PROJECT_CENTER } from "@/data/defaultStreets";
 import type { LatLng } from "@/lib/geo";
-import { polylineLength } from "@/lib/geo";
+import { polylineLength, projectOnPolyline } from "@/lib/geo";
 import {
   getGoogleMaps,
   type GoogleMapInstance,
@@ -42,6 +42,7 @@ function CalibrarPage() {
   const clickListenerRef = useRef<GoogleMapsEventListener | null>(null);
   const [showJson, setShowJson] = useState(false);
   const [jsonText, setJsonText] = useState("");
+  const [anchorMode, setAnchorMode] = useState(false);
 
   const active = useMemo(
     () => streets.find((s) => s.id === activeId) ?? null,
@@ -80,6 +81,30 @@ function CalibrarPage() {
     clickListenerRef.current = map.addListener("click", (e: GoogleMapMouseEvent) => {
       if (!e.latLng || !active) return;
       const pt: LatLng = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+      if (anchorMode) {
+        if (active.polyline.length < 2) {
+          alert("Trace o eixo da rua primeiro (pelo menos 2 pontos).");
+          return;
+        }
+        const poly = active.reversed
+          ? [...active.polyline].reverse()
+          : active.polyline;
+        const proj = projectOnPolyline(pt, poly);
+        if (!proj) return;
+        const input = prompt(
+          `Número da estaca neste ponto (planta):\n(distância ${proj.distance.toFixed(1)} m do eixo)`,
+          active.anchor ? String(active.anchor.stake) : "",
+        );
+        if (input === null) return;
+        const stake = Number(input);
+        if (!Number.isFinite(stake)) {
+          alert("Número inválido.");
+          return;
+        }
+        updateActive({ anchor: { stake, chainageM: proj.chainage } });
+        setAnchorMode(false);
+        return;
+      }
       updateActive({ polyline: [...active.polyline, pt] });
     });
     return () => {
