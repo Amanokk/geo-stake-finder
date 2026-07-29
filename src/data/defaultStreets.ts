@@ -1,5 +1,13 @@
 import type { LatLng } from "@/lib/geo";
 
+export type StakeAnchor = {
+  // Known stake number on the planta (e.g. 1127).
+  stake: number;
+  // Distance in meters from the polyline's start (respecting `reversed`)
+  // where that stake sits.
+  chainageM: number;
+};
+
 export type Street = {
   id: string;
   name: string;
@@ -8,12 +16,15 @@ export type Street = {
   polyline: LatLng[];
   // Distance in meters between consecutive stakes.
   spacing: number;
-  // First stake number (usually 0).
+  // First stake number at the polyline start (used when no anchor is set).
   startStake: number;
   // If true, chainage is measured from the LAST vertex of the polyline instead
   // of the first. Useful when the estaca 0 is on the "other end" than where
   // the user started drawing.
   reversed: boolean;
+  // Optional: a known stake on the planta, anywhere along the polyline.
+  // When present, overrides `startStake` for numbering.
+  anchor?: StakeAnchor;
 };
 
 // Streets present in the project "Retiro São Joaquim - Itaboraí/RJ"
@@ -47,6 +58,7 @@ export const DEFAULT_STREETS: Street[] = [
   spacing: 20,
   startStake: 0,
   reversed: false,
+  anchor: undefined as StakeAnchor | undefined,
 }));
 
 // Approximate center of the neighborhood (for initial map view).

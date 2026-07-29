@@ -5,7 +5,7 @@ import { loadStreets, saveStreets, resetStreets, exportJson } from "@/lib/street
 import type { Street } from "@/data/defaultStreets";
 import { PROJECT_CENTER } from "@/data/defaultStreets";
 import type { LatLng } from "@/lib/geo";
-import { polylineLength } from "@/lib/geo";
+import { polylineLength, projectOnPolyline } from "@/lib/geo";
 import {
   getGoogleMaps,
   type GoogleMapInstance,
@@ -42,6 +42,7 @@ function CalibrarPage() {
   const clickListenerRef = useRef<GoogleMapsEventListener | null>(null);
   const [showJson, setShowJson] = useState(false);
   const [jsonText, setJsonText] = useState("");
+  const [anchorMode, setAnchorMode] = useState(false);
 
   const active = useMemo(
     () => streets.find((s) => s.id === activeId) ?? null,
@@ -80,13 +81,37 @@ function CalibrarPage() {
     clickListenerRef.current = map.addListener("click", (e: GoogleMapMouseEvent) => {
       if (!e.latLng || !active) return;
       const pt: LatLng = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+      if (anchorMode) {
+        if (active.polyline.length < 2) {
+          alert("Trace o eixo da rua primeiro (pelo menos 2 pontos).");
+          return;
+        }
+        const poly = active.reversed
+          ? [...active.polyline].reverse()
+          : active.polyline;
+        const proj = projectOnPolyline(pt, poly);
+        if (!proj) return;
+        const input = prompt(
+          `Número da estaca neste ponto (planta):\n(distância ${proj.distance.toFixed(1)} m do eixo)`,
+          active.anchor ? String(active.anchor.stake) : "",
+        );
+        if (input === null) return;
+        const stake = Number(input);
+        if (!Number.isFinite(stake)) {
+          alert("Número inválido.");
+          return;
+        }
+        updateActive({ anchor: { stake, chainageM: proj.chainage } });
+        setAnchorMode(false);
+        return;
+      }
       updateActive({ polyline: [...active.polyline, pt] });
     });
     return () => {
       if (clickListenerRef.current) clickListenerRef.current.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, streets]);
+  }, [active, streets, anchorMode]);
 
   // Draw other (non-active) streets faintly
   useEffect(() => {
@@ -221,6 +246,37 @@ function CalibrarPage() {
           </div>
         )}
 
+        {active && (
+          <div className="flex flex-wrap items-center gap-2 rounded border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs">
+            <span className="text-slate-400">Estaca conhecida:</span>
+            {active.anchor ? (
+              <span className="font-mono text-yellow-300">
+                E-{active.anchor.stake} @ {active.anchor.chainageM.toFixed(1)} m
+              </span>
+            ) : (
+              <span className="text-slate-500">— (usando "Estaca inicial")</span>
+            )}
+            <button
+              onClick={() => setAnchorMode((v) => !v)}
+              className={`ml-auto rounded px-3 py-1.5 ${
+                anchorMode
+                  ? "bg-yellow-400 text-slate-950"
+                  : "bg-slate-800 text-slate-200"
+              }`}
+            >
+              {anchorMode ? "Toque no ponto da esquina…" : "Definir estaca aqui"}
+            </button>
+            {active.anchor && (
+              <button
+                onClick={() => updateActive({ anchor: undefined })}
+                className="rounded bg-slate-800 px-3 py-1.5 text-slate-200"
+              >
+                Remover
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2 text-xs">
           <button
             onClick={() => active && updateActive({ polyline: active.polyline.slice(0, -1) })}
@@ -249,7 +305,9 @@ function CalibrarPage() {
           </div>
         )}
         <div className="pointer-events-none absolute left-3 top-3 rounded bg-slate-900/80 px-3 py-1.5 text-xs text-slate-200 backdrop-blur">
-          Toque no mapa para adicionar pontos ao eixo
+          {anchorMode
+            ? "Toque na esquina/ponto de estaca conhecida"
+            : "Toque no mapa para adicionar pontos ao eixo"}
         </div>
       </div>
 

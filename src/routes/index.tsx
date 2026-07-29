@@ -4,6 +4,7 @@ import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { loadStreets } from "@/lib/streetsStore";
 import { projectOnPolyline, pointAtChainage, polylineLength, type LatLng } from "@/lib/geo";
+import { stakeAtChainage, stakesAlong } from "@/lib/stakes";
 import type { Street } from "@/data/defaultStreets";
 import { PROJECT_CENTER } from "@/data/defaultStreets";
 import {
@@ -53,17 +54,14 @@ function findNearestStake(pos: LatLng, streets: Street[], maxDist = 40): Match |
     const r = projectOnPolyline(pos, poly);
     if (!r) continue;
     if (r.distance > maxDist) continue;
-    const idxFloat = r.chainage / s.spacing;
-    const estacaIdx = Math.round(idxFloat);
-    const estacaChain = estacaIdx * s.spacing;
-    const offset = r.chainage - estacaChain;
+    const { number, offset } = stakeAtChainage(s, r.chainage);
     const snapped = pointAtChainage(poly, r.chainage) ?? pos;
     if (best === null || r.distance < best.distance) {
       best = {
         street: s,
         chainage: r.chainage,
         distance: r.distance,
-        estaca: s.startStake + estacaIdx,
+        estaca: number,
         offset,
         snapped,
       };
@@ -142,16 +140,14 @@ function Index() {
       if (s.polyline.length < 2) continue;
       const poly = s.reversed ? [...s.polyline].reverse() : s.polyline;
       const total = polylineLength(poly);
-      const count = Math.floor(total / s.spacing);
-      for (let i = 0; i <= count; i++) {
-        const pos = pointAtChainage(poly, i * s.spacing);
+      for (const { number, chainageM } of stakesAlong(s, total)) {
+        const pos = pointAtChainage(poly, chainageM);
         if (!pos) continue;
-        const num = s.startStake + i;
         const marker = new maps.Marker({
           position: pos,
           map,
           label: {
-            text: `E-${num}`,
+            text: `E-${number}`,
             color: "#0f172a",
             fontWeight: "700",
             fontSize: "11px",
