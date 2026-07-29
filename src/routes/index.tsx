@@ -121,6 +121,45 @@ function Index() {
     }
   }, [streets, mapsReady]);
 
+  // Draw stake markers for every calibrated street.
+  useEffect(() => {
+    if (!mapRef.current) return;
+    allStakesRef.current.forEach((m) => m.setMap(null));
+    allStakesRef.current = [];
+    for (const s of streets) {
+      if (s.polyline.length < 2) continue;
+      const poly = s.reversed ? [...s.polyline].reverse() : s.polyline;
+      const total = polylineLength(poly);
+      const count = Math.floor(total / s.spacing);
+      for (let i = 0; i <= count; i++) {
+        const pos = pointAtChainage(poly, i * s.spacing);
+        if (!pos) continue;
+        const num = s.startStake + i;
+        const marker = new google.maps.Marker({
+          position: pos,
+          map: mapRef.current,
+          label: {
+            text: `E-${num}`,
+            color: "#0f172a",
+            fontWeight: "700",
+            fontSize: "11px",
+          },
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: "#f8fafc",
+            fillOpacity: 0.95,
+            strokeColor: "#0f172a",
+            strokeWeight: 1.5,
+          },
+          zIndex: 500,
+          clickable: false,
+        });
+        allStakesRef.current.push(marker);
+      }
+    }
+  }, [streets, mapsReady]);
+
   // Update user marker + accuracy circle.
   useEffect(() => {
     if (!mapRef.current || !geo.position) return;
