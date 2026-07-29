@@ -111,7 +111,7 @@ function CalibrarPage() {
       if (clickListenerRef.current) clickListenerRef.current.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, streets]);
+  }, [active, streets, anchorMode]);
 
   // Draw other (non-active) streets faintly
   useEffect(() => {
