@@ -226,7 +226,7 @@ function Index() {
       position: match.snapped,
       map: mapRef.current,
       label: {
-        text: `E${match.estaca}`,
+        text: `E-${match.estaca}`,
         color: "#0f172a",
         fontWeight: "800",
         fontSize: "12px",
