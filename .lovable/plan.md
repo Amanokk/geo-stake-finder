@@ -1,38 +1,44 @@
-## Objetivo
+# Estacas do Retiro São Joaquim direto da planta
 
-Fazer os rótulos das estacas no mapa baterem com a numeração real da planta do Retiro São Joaquim (ex.: esquina da Rua Ângelo Burches = E-1127), em vez de começarem sempre em E-0.
+Remover a calibração manual e embutir no app as estacas reais da planta `2024_SJOAQUIM_PE_GEO_DE_001-R01.pdf`, para todas as ruas do bairro. O app abre no mapa, mostra as estacas e destaca a estaca em que o GPS está.
 
-## O que já existe
+## O que eu já confirmei na planta
 
-Cada rua já tem `startStake` e `spacing` no `Street` (src/data/defaultStreets.ts). Hoje o valor padrão é `startStake: 0` e a UI de Calibrar não deixa editar isso de forma clara, então todas as ruas aparecem como E-0, E-1, E-2… O cálculo de posição (`pointAtChainage`) já está correto — só falta amarrar a numeração à planta.
+- A planta é georreferenciada: tem malha UTM rotulada (E=715200 a E=717200, N=7481600 a N=7483600), fuso 23S. Dá para converter qualquer ponto do desenho em latitude/longitude.
+- O "eixo projetado" é uma linha traço-ponto vermelha desenhada como vetor (cor #950000), com marcas de estaca ao longo dela — extraível com precisão.
+- Cada rua tem sua própria numeração, não é uma numeração única do bairro. Exemplos lidos na planta: Cel. João de Magalhães 510→562, José Leandro 1248→1358, Dr. Altamir Moreira 466→473, Padre Mariano de Castro 558→562.
+- Os números das estacas **não** são texto legível por máquina no PDF (a fonte do AutoCAD não tem mapeamento Unicode); eles são contornos vetoriais. Serão lidos por OCR em recortes de alta resolução do desenho.
+- Não existe "Rua São Joaquim" na planta — São Joaquim é o bairro. O escopo é o bairro inteiro.
 
-## Mudanças
+## Como vai funcionar
 
-1. **Modelo (src/data/defaultStreets.ts)**
-   - Manter `startStake` (número da estaca no início da polyline) e `spacing` (20 m por padrão, conforme convenção topográfica da planta).
-   - Adicionar campo opcional `anchor?: { stake: number; chainageM: number }` para casos em que a estaca conhecida não está no vértice inicial (ex.: E-1127 fica no meio ou no fim da polyline). Quando presente, `startStake` é derivado: `startStake = anchor.stake - anchor.chainageM / spacing`.
+1. Extraio, do PDF, todos os eixos vermelhos e os converto de coordenadas do desenho para latitude/longitude.
+2. Agrupo os eixos por rua e leio por OCR os rótulos de estaca ao longo de cada eixo.
+3. Gero um arquivo de dados fixo no app com: nome da rua, o traçado do eixo e a numeração das estacas (primeira estaca, passo e posição de cada uma).
+4. O app passa a usar só esses dados. Nada de calibrar, nada de salvar no navegador.
 
-2. **Cálculo (src/lib/geo.ts / consumidores)**
-   - Nova função `stakeNumberAt(street, chainageM)` que devolve o número inteiro da estaca (ex.: 1127) e o offset em metros. Usa `startStake` (ou o `anchor`) + `chainageM / spacing`.
-   - Usada tanto na renderização dos marcadores quanto no card "Estaca atual".
+## Tela do app
 
-3. **UI de Calibrar (src/routes/calibrar.tsx)**
-   - Para cada rua, além de `spacing` e `reversed`, expor dois campos claros:
-     - "Estaca inicial" (número na planta correspondente ao 1º vértice).
-     - Botão "Definir estaca conhecida aqui" — o usuário clica num ponto do traçado, informa o número (ex.: 1127) e o app grava o `anchor` com a chainage projetada. Ideal para esquinas que aparecem cotadas na planta.
-   - Pré-preencher, para cada rua da planta, o valor conhecido quando o usuário souber (ex.: Ângelo Burches → estaca 1127 na esquina X).
+- Mapa em satélite/híbrido, centralizado na sua posição, seguindo o GPS.
+- Todos os eixos das ruas desenhados por cima do mapa.
+- Cada estaca marcada com o rótulo `E-1127` (o número real da planta).
+- Painel no topo: nome da rua atual, a estaca mais próxima (ex.: `E-1127 +7 m`), distância até o eixo e precisão do GPS.
+- Quando você estiver longe de qualquer eixo, o painel avisa "fora da área do projeto" em vez de mostrar uma estaca errada.
+- Rótulos aparecem só em zoom próximo, para o mapa não ficar poluído.
 
-4. **Renderização (src/routes/index.tsx)**
-   - Trocar o label `E-${i}` (índice) por `E-${stakeNumberAt(street, i*spacing)}`.
-   - O destaque da estaca atual e o texto do card passam a mostrar o número real (ex.: "E-1127 +3,5 m").
+## Conferência antes de entregar
+
+Depois de gerar os dados, comparo lado a lado alguns pontos conhecidos (esquinas com número de estaca visível na planta) contra o que o app calcula, e ajusto se houver desvio. Vou te mostrar essa conferência.
 
 ## Detalhes técnicos
 
-- `spacing` continua 20 m por padrão (padrão da planta topográfica). Se alguma rua usar outro passo, é editável por rua.
-- `startStake` passa a aceitar valores altos (ex.: 1120) e negativos (para casos em que a origem do traçado fica antes da E-0).
-- Migração: `loadStreets()` normaliza registros antigos preenchendo `anchor: undefined` — sem quebra de dados.
-- Sem mudanças de backend; tudo continua em `localStorage`.
+- Extração: `mutool` para os vetores (filtrando stroke `#950000`), transformação afim PDF→UTM 23S ancorada nas linhas de malha, e `proj`/fórmula UTM inversa para WGS84. OCR com `pytesseract` nos recortes dos rótulos, com correção de rotação.
+- Novo `src/data/streets.ts` (ou JSON importado) com `{ nome, eixo: [lat,lng][], estacas: [{ numero, lat, lng, chainage }] }`.
+- `src/lib/geo.ts` mantido (projeção ponto→polilinha). `src/lib/stakes.ts` simplificado para consultar a lista fixa.
+- Remoção de `src/routes/calibrar.tsx`, `src/lib/streetsStore.ts` e `src/data/defaultStreets.ts`, e dos links/estados de calibração em `src/routes/index.tsx`.
+- Marcadores renderizados com um único `OverlayView`/canvas ou marcadores com `visible` por zoom, para não travar com centenas de estacas.
+- `head()` da rota principal com título e descrição próprios.
 
-## Fora de escopo
+## Riscos
 
-- Extrair automaticamente as coordenadas das estacas do PDF (a planta não é georreferenciada com precisão suficiente para isso sem um passo manual). A calibração continua sendo feita pelo usuário no mapa.
+- Se o OCR errar algum número, a numeração daquela rua sai deslocada. Mitigação: a numeração é sequencial e de passo constante, então basta um rótulo correto por trecho; valido a sequência lida contra o passo esperado e sinalizo os trechos duvidosos para você conferir.
