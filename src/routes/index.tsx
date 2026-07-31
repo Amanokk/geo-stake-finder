@@ -79,6 +79,7 @@ function Index() {
   const stakeMarkerRef = useRef<GoogleMarkerInstance | null>(null);
   const poolRef = useRef<GoogleMarkerInstance[]>([]);
   const followRef = useRef(true);
+  const lastCenterRef = useRef<LatLng | null>(null);
 
   const posKey = geo.position ? quantize(geo.position) : null;
   const match = useMemo(
