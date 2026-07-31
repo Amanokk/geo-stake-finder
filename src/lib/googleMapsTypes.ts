@@ -32,21 +32,33 @@ export type GoogleSymbolIcon = {
   strokeWeight?: number;
 };
 
+export type GoogleLatLngBounds = {
+  contains: (latLng: GoogleLatLngLiteral) => boolean;
+};
+
 export type GoogleMapInstance = {
   addListener: (
     eventName: string,
     handler: (event: GoogleMapMouseEvent) => void,
   ) => GoogleMapsEventListener;
   panTo: (latLng: GoogleLatLngLiteral) => void;
+  setCenter: (latLng: GoogleLatLngLiteral) => void;
+  getBounds: () => GoogleLatLngBounds | undefined;
+  getZoom: () => number | undefined;
 };
 
 export type GooglePolylineInstance = {
   setMap: (map: GoogleMapInstance | null) => void;
+  setPath: (path: GoogleLatLngLiteral[]) => void;
+  setOptions: (options: Record<string, unknown>) => void;
 };
 
 export type GoogleMarkerInstance = {
   setMap: (map: GoogleMapInstance | null) => void;
   setPosition: (position: GoogleLatLngLiteral) => void;
+  setVisible: (visible: boolean) => void;
+  setLabel: (label: GoogleMarkerLabel | null) => void;
+  setOptions: (options: Record<string, unknown>) => void;
 };
 
 export type GoogleCircleInstance = {
@@ -55,42 +67,19 @@ export type GoogleCircleInstance = {
 };
 
 export type GoogleMapsApi = {
-  Map: new (
-    element: HTMLElement,
-    options: {
-      center: GoogleLatLngLiteral;
-      zoom: number;
-      mapTypeId: string;
-      disableDefaultUI: boolean;
-      zoomControl: boolean;
-      tilt: number;
-    },
-  ) => GoogleMapInstance;
-  Polyline: new (options: {
-    path: GoogleLatLngLiteral[];
-    strokeColor: string;
-    strokeOpacity: number;
-    strokeWeight: number;
-    map: GoogleMapInstance;
-  }) => GooglePolylineInstance;
+  Map: new (element: HTMLElement, options: Record<string, unknown>) => GoogleMapInstance;
+  Polyline: new (options: Record<string, unknown>) => GooglePolylineInstance;
   Marker: new (options: {
     position: GoogleLatLngLiteral;
-    map: GoogleMapInstance;
+    map?: GoogleMapInstance | null;
     label?: GoogleMarkerLabel;
     icon?: GoogleSymbolIcon;
     zIndex?: number;
     clickable?: boolean;
+    visible?: boolean;
+    optimized?: boolean;
   }) => GoogleMarkerInstance;
-  Circle: new (options: {
-    center: GoogleLatLngLiteral;
-    radius: number;
-    map: GoogleMapInstance;
-    fillColor: string;
-    fillOpacity: number;
-    strokeColor: string;
-    strokeOpacity: number;
-    strokeWeight: number;
-  }) => GoogleCircleInstance;
+  Circle: new (options: Record<string, unknown>) => GoogleCircleInstance;
   SymbolPath: {
     CIRCLE: number | string;
   };
