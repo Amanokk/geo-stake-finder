@@ -63,6 +63,14 @@ export function useGeolocation(enabled = true): GeoState {
         }
 
         lastRef.current = { pos: next, acc: nextAcc, t };
+
+        // Limita re-renders: no máximo ~1 atualização por segundo,
+        // ou antes disso se o deslocamento for relevante (> 2 m).
+        const emitted = lastEmitRef.current;
+        const moved = emitted ? haversine(emitted.pos, next) : Infinity;
+        if (emitted && t - emitted.t < 1000 && moved < 2) return;
+        lastEmitRef.current = { pos: next, t };
+
         setState({
           position: next,
           accuracy: Math.round(Math.min(nextAcc, acc) * 10) / 10,
