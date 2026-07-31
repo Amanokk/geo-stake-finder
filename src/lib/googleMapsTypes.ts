@@ -32,21 +32,33 @@ export type GoogleSymbolIcon = {
   strokeWeight?: number;
 };
 
+export type GoogleLatLngBounds = {
+  contains: (latLng: GoogleLatLngLiteral) => boolean;
+};
+
 export type GoogleMapInstance = {
   addListener: (
     eventName: string,
     handler: (event: GoogleMapMouseEvent) => void,
   ) => GoogleMapsEventListener;
   panTo: (latLng: GoogleLatLngLiteral) => void;
+  setCenter: (latLng: GoogleLatLngLiteral) => void;
+  getBounds: () => GoogleLatLngBounds | undefined;
+  getZoom: () => number | undefined;
 };
 
 export type GooglePolylineInstance = {
   setMap: (map: GoogleMapInstance | null) => void;
+  setPath: (path: GoogleLatLngLiteral[]) => void;
+  setOptions: (options: Record<string, unknown>) => void;
 };
 
 export type GoogleMarkerInstance = {
   setMap: (map: GoogleMapInstance | null) => void;
   setPosition: (position: GoogleLatLngLiteral) => void;
+  setVisible: (visible: boolean) => void;
+  setLabel: (label: GoogleMarkerLabel | null) => void;
+  setOptions: (options: Record<string, unknown>) => void;
 };
 
 export type GoogleCircleInstance = {
