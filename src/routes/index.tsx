@@ -15,9 +15,9 @@ import {
 } from "@/lib/googleMapsTypes";
 
 const PROJECT_CENTER: LatLng = { lat: -22.7524, lng: -42.8935 };
-const LABEL_MIN_ZOOM = 17; // rótulos só de perto
-const STAKE_MIN_ZOOM = 15; // abaixo disso, nenhum marcador de estaca
-const MAX_VISIBLE_STAKES = 220; // teto duro para não travar
+const LABEL_MIN_ZOOM = 18; // rótulos só bem de perto
+const STAKE_MIN_ZOOM = 16; // abaixo disso, nenhum marcador de estaca
+const MAX_VISIBLE_STAKES = 90; // teto duro para não travar em celular
 
 export const Route = createFileRoute("/")({
   head: () => ({
