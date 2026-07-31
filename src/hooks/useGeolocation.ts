@@ -26,6 +26,7 @@ export function useGeolocation(enabled = true): GeoState {
   });
 
   const lastRef = useRef<{ pos: LatLng; acc: number; t: number } | null>(null);
+  const lastEmitRef = useRef<{ pos: LatLng; t: number } | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
