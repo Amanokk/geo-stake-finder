@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef } from "react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { projectOnPolyline, pointAtChainage, type LatLng } from "@/lib/geo";
+import { projectOnPolyline, pointAtChainage, haversine, type LatLng } from "@/lib/geo";
 import { stakeAtChainage } from "@/lib/stakes";
 import { getGeometries, getAllStakes } from "@/lib/stakePoints";
 import { STREETS, type Street } from "@/data/streets";
