@@ -292,9 +292,13 @@ function Index() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
+      <Splash />
       <header className="px-4 pt-5 pb-4">
-        <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-          Retiro São Joaquim · Itaboraí/RJ
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
+            Retiro São Joaquim · Itaboraí/RJ
+          </div>
+          <div className="text-[11px] font-semibold text-yellow-300/90">By Vitor Lucas</div>
         </div>
         {match ? (
           <>
