@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef } from "react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+import { Splash } from "@/components/Splash";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { projectOnPolyline, pointAtChainage, type LatLng } from "@/lib/geo";
+import { projectOnPolyline, pointAtChainage, haversine, type LatLng } from "@/lib/geo";
 import { stakeAtChainage } from "@/lib/stakes";
 import { getGeometries, getAllStakes } from "@/lib/stakePoints";
 import { STREETS, type Street } from "@/data/streets";
@@ -15,9 +16,9 @@ import {
 } from "@/lib/googleMapsTypes";
 
 const PROJECT_CENTER: LatLng = { lat: -22.7524, lng: -42.8935 };
-const LABEL_MIN_ZOOM = 17; // rótulos só de perto
-const STAKE_MIN_ZOOM = 15; // abaixo disso, nenhum marcador de estaca
-const MAX_VISIBLE_STAKES = 220; // teto duro para não travar
+const LABEL_MIN_ZOOM = 18; // rótulos só bem de perto
+const STAKE_MIN_ZOOM = 16; // abaixo disso, nenhum marcador de estaca
+const MAX_VISIBLE_STAKES = 90; // teto duro para não travar em celular
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -79,6 +80,7 @@ function Index() {
   const stakeMarkerRef = useRef<GoogleMarkerInstance | null>(null);
   const poolRef = useRef<GoogleMarkerInstance[]>([]);
   const followRef = useRef(true);
+  const lastCenterRef = useRef<LatLng | null>(null);
 
   const posKey = geo.position ? quantize(geo.position) : null;
   const match = useMemo(
@@ -204,10 +206,16 @@ function Index() {
         },
         zIndex: 1000,
       });
-      map.panTo(geo.position);
+      map.setCenter(geo.position);
+      lastCenterRef.current = geo.position;
     } else {
       userMarkerRef.current.setPosition(geo.position);
-      if (followRef.current) map.panTo(geo.position);
+      // recentraliza só quando o usuário andou de verdade (evita animações constantes)
+      const last = lastCenterRef.current;
+      if (followRef.current && (!last || haversine(last, geo.position) > 8)) {
+        map.panTo(geo.position);
+        lastCenterRef.current = geo.position;
+      }
     }
     if (geo.accuracy) {
       if (!accuracyCircleRef.current) {
@@ -285,9 +293,13 @@ function Index() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
+      <Splash />
       <header className="px-4 pt-5 pb-4">
-        <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-          Retiro São Joaquim · Itaboraí/RJ
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
+            Retiro São Joaquim · Itaboraí/RJ
+          </div>
+          <div className="text-[11px] font-semibold text-yellow-300/90">By Vitor Lucas</div>
         </div>
         {match ? (
           <>
