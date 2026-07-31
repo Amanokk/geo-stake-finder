@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef } from "react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { projectOnPolyline, pointAtChainage, polylineLength, type LatLng } from "@/lib/geo";
-import { stakeAtChainage, stakesAlong } from "@/lib/stakes";
+import { projectOnPolyline, pointAtChainage, type LatLng } from "@/lib/geo";
+import { stakeAtChainage } from "@/lib/stakes";
+import { getGeometries, getAllStakes } from "@/lib/stakePoints";
 import { STREETS, type Street } from "@/data/streets";
 import {
   getGoogleMaps,
@@ -14,6 +15,9 @@ import {
 } from "@/lib/googleMapsTypes";
 
 const PROJECT_CENTER: LatLng = { lat: -22.7524, lng: -42.8935 };
+const LABEL_MIN_ZOOM = 17; // rótulos só de perto
+const STAKE_MIN_ZOOM = 15; // abaixo disso, nenhum marcador de estaca
+const MAX_VISIBLE_STAKES = 220; // teto duro para não travar
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -47,17 +51,20 @@ type Match = {
 
 function findNearestStake(pos: LatLng, maxDist = 60): Match | null {
   let best: Match | null = null;
-  for (const s of STREETS) {
-    const r = projectOnPolyline(pos, s.path);
+  for (const { street, length } of getGeometries()) {
+    const r = projectOnPolyline(pos, street.path);
     if (!r || r.distance > maxDist) continue;
-    const total = r.totalLength;
-    const { number, offset } = stakeAtChainage(s, r.chainage, total);
-    const snapped = pointAtChainage(s.path, r.chainage) ?? pos;
-    if (best === null || r.distance < best.distance) {
-      best = { street: s, chainage: r.chainage, distance: r.distance, estaca: number, offset, snapped };
-    }
+    if (best !== null && r.distance >= best.distance) continue;
+    const { number, offset } = stakeAtChainage(street, r.chainage, length);
+    const snapped = pointAtChainage(street.path, r.chainage) ?? pos;
+    best = { street, chainage: r.chainage, distance: r.distance, estaca: number, offset, snapped };
   }
   return best;
+}
+
+// Arredonda a posição para ~0.5 m: evita recalcular tudo a cada micro-jitter do GPS.
+function quantize(p: LatLng): string {
+  return `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 }
 
 function Index() {
@@ -70,32 +77,41 @@ function Index() {
   const streetLinesRef = useRef<GooglePolylineInstance[]>([]);
   const highlightRef = useRef<GooglePolylineInstance | null>(null);
   const stakeMarkerRef = useRef<GoogleMarkerInstance | null>(null);
-  const allStakesRef = useRef<GoogleMarkerInstance[]>([]);
+  const poolRef = useRef<GoogleMarkerInstance[]>([]);
+  const followRef = useRef(true);
 
-  const match = useMemo(() => (geo.position ? findNearestStake(geo.position) : null), [geo.position]);
+  const posKey = geo.position ? quantize(geo.position) : null;
+  const match = useMemo(
+    () => (geo.position ? findNearestStake(geo.position) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [posKey],
+  );
 
+  // Mapa
   useEffect(() => {
     const maps = getGoogleMaps();
     if (!mapsReady || !maps || !mapDivRef.current || mapRef.current) return;
-    mapRef.current = new maps.Map(mapDivRef.current, {
+    const map = new maps.Map(mapDivRef.current, {
       center: PROJECT_CENTER,
-      zoom: 16,
+      zoom: 17,
       mapTypeId: "hybrid",
       disableDefaultUI: true,
       zoomControl: true,
       tilt: 0,
+      clickableIcons: false,
+      gestureHandling: "greedy",
+    });
+    mapRef.current = map;
+    map.addListener("dragstart", () => {
+      followRef.current = false;
     });
   }, [mapsReady]);
 
-  // Eixos + estacas da planta.
+  // Eixos das ruas (desenhados uma única vez).
   useEffect(() => {
     const maps = getGoogleMaps();
     const map = mapRef.current;
-    if (!maps || !map) return;
-    streetLinesRef.current.forEach((l) => l.setMap(null));
-    allStakesRef.current.forEach((m) => m.setMap(null));
-    streetLinesRef.current = [];
-    allStakesRef.current = [];
+    if (!maps || !map || streetLinesRef.current.length) return;
     for (const s of STREETS) {
       streetLinesRef.current.push(
         new maps.Polyline({
@@ -103,34 +119,72 @@ function Index() {
           strokeColor: "#38bdf8",
           strokeOpacity: 0.85,
           strokeWeight: 3,
+          clickable: false,
           map,
         }),
       );
-      const total = polylineLength(s.path);
-      for (const { number, chainageM } of stakesAlong(s, total)) {
-        const pos = pointAtChainage(s.path, chainageM);
-        if (!pos) continue;
-        allStakesRef.current.push(
-          new maps.Marker({
-            position: pos,
-            map,
-            label: { text: `E-${number}`, color: "#0f172a", fontWeight: "700", fontSize: "11px" },
-            icon: {
-              path: maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: "#f8fafc",
-              fillOpacity: 0.95,
-              strokeColor: "#0f172a",
-              strokeWeight: 1.5,
-            },
-            zIndex: 500,
-            clickable: false,
-          }),
-        );
-      }
     }
   }, [mapsReady]);
 
+  // Estacas: pool de marcadores reaproveitado, só o que está na viewport.
+  useEffect(() => {
+    const maps = getGoogleMaps();
+    const map = mapRef.current;
+    if (!maps || !map) return;
+
+    const render = () => {
+      const bounds = map.getBounds();
+      const zoom = map.getZoom() ?? 0;
+      const pool = poolRef.current;
+      if (!bounds || zoom < STAKE_MIN_ZOOM) {
+        pool.forEach((m) => m.setVisible(false));
+        return;
+      }
+      const showLabel = zoom >= LABEL_MIN_ZOOM;
+      const visible = [];
+      for (const st of getAllStakes()) {
+        if (!bounds.contains(st.pos)) continue;
+        visible.push(st);
+        if (visible.length >= MAX_VISIBLE_STAKES) break;
+      }
+      for (let i = 0; i < visible.length; i++) {
+        const st = visible[i];
+        let m = pool[i];
+        if (!m) {
+          m = new maps.Marker({
+            position: st.pos,
+            map,
+            optimized: true,
+            clickable: false,
+            zIndex: 500,
+          });
+          pool.push(m);
+        }
+        m.setOptions({
+          position: st.pos,
+          visible: true,
+          label: showLabel
+            ? { text: `E-${st.number}`, color: "#0f172a", fontWeight: "700", fontSize: "11px" }
+            : null,
+          icon: {
+            path: maps.SymbolPath.CIRCLE,
+            scale: showLabel ? 10 : 4,
+            fillColor: "#f8fafc",
+            fillOpacity: 0.95,
+            strokeColor: "#0f172a",
+            strokeWeight: 1.5,
+          },
+        });
+      }
+      for (let i = visible.length; i < pool.length; i++) pool[i].setVisible(false);
+    };
+
+    const listener = map.addListener("idle", render);
+    render();
+    return () => listener.remove();
+  }, [mapsReady]);
+
+  // Posição do usuário
   useEffect(() => {
     const maps = getGoogleMaps();
     const map = mapRef.current;
@@ -139,6 +193,7 @@ function Index() {
       userMarkerRef.current = new maps.Marker({
         position: geo.position,
         map,
+        clickable: false,
         icon: {
           path: maps.SymbolPath.CIRCLE,
           scale: 8,
@@ -152,6 +207,7 @@ function Index() {
       map.panTo(geo.position);
     } else {
       userMarkerRef.current.setPosition(geo.position);
+      if (followRef.current) map.panTo(geo.position);
     }
     if (geo.accuracy) {
       if (!accuracyCircleRef.current) {
@@ -159,6 +215,7 @@ function Index() {
           center: geo.position,
           radius: geo.accuracy,
           map,
+          clickable: false,
           fillColor: "#22d3ee",
           fillOpacity: 0.12,
           strokeColor: "#22d3ee",
@@ -172,37 +229,59 @@ function Index() {
     }
   }, [geo.position, geo.accuracy]);
 
+  // Destaque da rua/estaca atual
   useEffect(() => {
     const maps = getGoogleMaps();
     const map = mapRef.current;
     if (!maps || !map) return;
-    highlightRef.current?.setMap(null);
-    highlightRef.current = null;
-    stakeMarkerRef.current?.setMap(null);
-    stakeMarkerRef.current = null;
-    if (!match) return;
-    highlightRef.current = new maps.Polyline({
-      path: match.street.path,
-      strokeColor: "#facc15",
-      strokeOpacity: 1,
-      strokeWeight: 5,
-      map,
-    });
-    stakeMarkerRef.current = new maps.Marker({
+    if (!match) {
+      highlightRef.current?.setMap(null);
+      highlightRef.current = null;
+      stakeMarkerRef.current?.setMap(null);
+      stakeMarkerRef.current = null;
+      return;
+    }
+    if (!highlightRef.current) {
+      highlightRef.current = new maps.Polyline({
+        path: match.street.path,
+        strokeColor: "#facc15",
+        strokeOpacity: 1,
+        strokeWeight: 5,
+        clickable: false,
+        map,
+      });
+    } else {
+      highlightRef.current.setPath(match.street.path);
+      highlightRef.current.setMap(map);
+    }
+    if (!stakeMarkerRef.current) {
+      stakeMarkerRef.current = new maps.Marker({
+        position: match.snapped,
+        map,
+        clickable: false,
+        icon: {
+          path: maps.SymbolPath.CIRCLE,
+          scale: 14,
+          fillColor: "#facc15",
+          fillOpacity: 1,
+          strokeColor: "#0f172a",
+          strokeWeight: 2,
+        },
+        zIndex: 900,
+      });
+    }
+    stakeMarkerRef.current.setOptions({
       position: match.snapped,
       map,
+      visible: true,
       label: { text: `E-${match.estaca}`, color: "#0f172a", fontWeight: "800", fontSize: "12px" },
-      icon: {
-        path: maps.SymbolPath.CIRCLE,
-        scale: 14,
-        fillColor: "#facc15",
-        fillOpacity: 1,
-        strokeColor: "#0f172a",
-        strokeWeight: 2,
-      },
-      zIndex: 900,
     });
   }, [match]);
+
+  const recenter = () => {
+    followRef.current = true;
+    if (geo.position) mapRef.current?.panTo(geo.position);
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
@@ -251,13 +330,17 @@ function Index() {
             Carregando mapa…
           </div>
         )}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-between p-3">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 p-3">
           <div className="pointer-events-auto rounded-full bg-slate-900/80 px-3 py-1.5 text-xs text-slate-200 backdrop-blur">
             GPS ±{geo.accuracy ? geo.accuracy.toFixed(0) : "--"} m
           </div>
-          <div className="pointer-events-auto rounded-full bg-slate-900/80 px-3 py-1.5 text-xs text-slate-200 backdrop-blur">
-            {STREETS.length} ruas · estacas a cada 20 m
-          </div>
+          <button
+            type="button"
+            onClick={recenter}
+            className="pointer-events-auto rounded-full bg-yellow-300 px-4 py-1.5 text-xs font-bold text-slate-900"
+          >
+            Centralizar
+          </button>
         </div>
       </div>
     </div>
