@@ -32,7 +32,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Estaca GPS — Retiro São Joaquim" },
       {
         property: "og:description",
-        content: "Localize em tempo real a rua e a estaca do projeto usando GPS.",
+        content: "App de campo que mostra no mapa, pelo GPS, a rua e a estaca correta do projeto viário do bairro Retiro São Joaquim (Itaboraí/RJ).",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

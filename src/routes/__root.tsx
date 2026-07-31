@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Estaca GPS — Retiro São Joaquim" },
       {
         name: "description",
-        content: "Localize pelo GPS a rua e a estaca do projeto viário do Retiro São Joaquim.",
+        content: "App de campo que mostra no mapa, pelo GPS, a rua e a estaca correta do projeto viário do bairro Retiro São Joaquim (Itaboraí/RJ).",
       },
       { name: "author", content: "Vitor Lucas" },
       { name: "theme-color", content: "#020617" },
@@ -93,6 +93,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "Estaca GPS — Retiro São Joaquim" },
+      { name: "twitter:title", content: "Estaca GPS — Retiro São Joaquim" },
+      { property: "og:description", content: "App de campo que mostra no mapa, pelo GPS, a rua e a estaca correta do projeto viário do bairro Retiro São Joaquim (Itaboraí/RJ)." },
+      { name: "twitter:description", content: "App de campo que mostra no mapa, pelo GPS, a rua e a estaca correta do projeto viário do bairro Retiro São Joaquim (Itaboraí/RJ)." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/608e8ad9-e242-4c93-b6fc-863c77412aa8/id-preview-a269f76b--464a3021-16aa-4905-b359-64706f1a74e8.lovable.app-1785460667995.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/608e8ad9-e242-4c93-b6fc-863c77412aa8/id-preview-a269f76b--464a3021-16aa-4905-b359-64706f1a74e8.lovable.app-1785460667995.png" },
     ],
     links: [
       {
