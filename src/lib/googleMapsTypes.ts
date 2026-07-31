@@ -67,42 +67,19 @@ export type GoogleCircleInstance = {
 };
 
 export type GoogleMapsApi = {
-  Map: new (
-    element: HTMLElement,
-    options: {
-      center: GoogleLatLngLiteral;
-      zoom: number;
-      mapTypeId: string;
-      disableDefaultUI: boolean;
-      zoomControl: boolean;
-      tilt: number;
-    },
-  ) => GoogleMapInstance;
-  Polyline: new (options: {
-    path: GoogleLatLngLiteral[];
-    strokeColor: string;
-    strokeOpacity: number;
-    strokeWeight: number;
-    map: GoogleMapInstance;
-  }) => GooglePolylineInstance;
+  Map: new (element: HTMLElement, options: Record<string, unknown>) => GoogleMapInstance;
+  Polyline: new (options: Record<string, unknown>) => GooglePolylineInstance;
   Marker: new (options: {
     position: GoogleLatLngLiteral;
-    map: GoogleMapInstance;
+    map?: GoogleMapInstance | null;
     label?: GoogleMarkerLabel;
     icon?: GoogleSymbolIcon;
     zIndex?: number;
     clickable?: boolean;
+    visible?: boolean;
+    optimized?: boolean;
   }) => GoogleMarkerInstance;
-  Circle: new (options: {
-    center: GoogleLatLngLiteral;
-    radius: number;
-    map: GoogleMapInstance;
-    fillColor: string;
-    fillOpacity: number;
-    strokeColor: string;
-    strokeOpacity: number;
-    strokeWeight: number;
-  }) => GoogleCircleInstance;
+  Circle: new (options: Record<string, unknown>) => GoogleCircleInstance;
   SymbolPath: {
     CIRCLE: number | string;
   };
