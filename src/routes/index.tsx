@@ -204,10 +204,16 @@ function Index() {
         },
         zIndex: 1000,
       });
-      map.panTo(geo.position);
+      map.setCenter(geo.position);
+      lastCenterRef.current = geo.position;
     } else {
       userMarkerRef.current.setPosition(geo.position);
-      if (followRef.current) map.panTo(geo.position);
+      // recentraliza só quando o usuário andou de verdade (evita animações constantes)
+      const last = lastCenterRef.current;
+      if (followRef.current && (!last || haversine(last, geo.position) > 8)) {
+        map.panTo(geo.position);
+        lastCenterRef.current = geo.position;
+      }
     }
     if (geo.accuracy) {
       if (!accuracyCircleRef.current) {
