@@ -86,6 +86,7 @@ function quantize(p: LatLng): string {
 function Index() {
   const mapsReady = useGoogleMaps();
   const geo = useGeolocation(true);
+  const online = useOnlineStatus();
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<GoogleMapInstance | null>(null);
   const userMarkerRef = useRef<GoogleMarkerInstance | null>(null);
@@ -310,7 +311,14 @@ function Index() {
           <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
             Retiro São Joaquim · Itaboraí/RJ
           </div>
-          <div className="text-[11px] font-semibold text-yellow-300/90">By Vitor Lucas</div>
+          <div className="flex items-center gap-2">
+            {!online && (
+              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300">
+                Offline
+              </span>
+            )}
+            <div className="text-[11px] font-semibold text-yellow-300/90">By Vitor Lucas</div>
+          </div>
         </div>
         {match ? (
           <>
