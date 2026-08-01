@@ -34,6 +34,7 @@ export type GoogleSymbolIcon = {
 
 export type GoogleLatLngBounds = {
   contains: (latLng: GoogleLatLngLiteral) => boolean;
+  toJSON: () => { north: number; south: number; east: number; west: number };
 };
 
 export type GoogleMapInstance = {
