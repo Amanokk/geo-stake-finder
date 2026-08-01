@@ -5,7 +5,9 @@ import { Splash } from "@/components/Splash";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { projectOnPolyline, pointAtChainage, haversine, type LatLng } from "@/lib/geo";
 import { stakeAtChainage } from "@/lib/stakes";
-import { getGeometries, getAllStakes } from "@/lib/stakePoints";
+import { getGeometries } from "@/lib/stakePoints";
+import { stakesInRect, getStreetBoxes } from "@/lib/stakeIndex";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { STREETS, type Street } from "@/data/streets";
 import {
   getGoogleMaps,
@@ -50,9 +52,22 @@ type Match = {
   snapped: LatLng;
 };
 
+const DEG = 1 / 111320; // ~1 m em graus
+
 function findNearestStake(pos: LatLng, maxDist = 60): Match | null {
+  const geoms = getGeometries();
+  const pad = maxDist * DEG * 1.5;
   let best: Match | null = null;
-  for (const { street, length } of getGeometries()) {
+  for (const box of getStreetBoxes()) {
+    // Descarta ruas fora da caixa envolvente antes de projetar ponto a ponto.
+    if (
+      pos.lat < box.south - pad ||
+      pos.lat > box.north + pad ||
+      pos.lng < box.west - pad ||
+      pos.lng > box.east + pad
+    )
+      continue;
+    const { street, length } = geoms[box.index];
     const r = projectOnPolyline(pos, street.path);
     if (!r || r.distance > maxDist) continue;
     if (best !== null && r.distance >= best.distance) continue;
@@ -143,12 +158,8 @@ function Index() {
         return;
       }
       const showLabel = zoom >= LABEL_MIN_ZOOM;
-      const visible = [];
-      for (const st of getAllStakes()) {
-        if (!bounds.contains(st.pos)) continue;
-        visible.push(st);
-        if (visible.length >= MAX_VISIBLE_STAKES) break;
-      }
+      // Busca só nas células da grade que cobrem a viewport (em vez de varrer ~1000 estacas).
+      const visible = stakesInRect(bounds.toJSON(), MAX_VISIBLE_STAKES);
       for (let i = 0; i < visible.length; i++) {
         const st = visible[i];
         let m = pool[i];
