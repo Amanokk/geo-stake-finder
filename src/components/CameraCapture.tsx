@@ -19,6 +19,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const [error, setError] = useState<string | null>(null);
   const [shot, setShot] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [fileName, setFileName] = useState("foto");
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15000);
