@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { savePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 
 export type CameraStamp = {
   estaca: string | null;
