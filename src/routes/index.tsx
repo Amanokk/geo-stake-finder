@@ -99,6 +99,8 @@ function Index() {
   const poolRef = useRef<GoogleMarkerInstance[]>([]);
   const followRef = useRef(true);
   const lastCenterRef = useRef<LatLng | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+
 
   const posKey = geo.position ? quantize(geo.position) : null;
   const match = useMemo(
