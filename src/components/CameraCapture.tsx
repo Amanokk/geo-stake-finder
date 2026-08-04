@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { savePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 
 export type CameraStamp = {
   estaca: string | null;
@@ -18,6 +19,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const [error, setError] = useState<string | null>(null);
   const [shot, setShot] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [fileName, setFileName] = useState("foto");
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15000);
@@ -116,15 +120,20 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     ctx.textAlign = "left";
 
     setShot(canvas.toDataURL("image/jpeg", 0.92));
+    const p = (n: number) => String(n).padStart(2, "0");
+    setFileName(
+      `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
+    );
   }, [coords, lines, stamp.estaca]);
 
-  const save = () => {
-    if (!shot) return;
-    const a = document.createElement("a");
-    a.href = shot;
-    a.download = `estaca-${stamp.estaca ?? "foto"}-${Date.now()}.jpg`;
-    a.click();
+  const save = async () => {
+    if (!shot || saving) return;
+    setSaving(true);
+    const res = await savePhoto(shot, fileName);
+    setSaving(false);
+    setStatus(res.message);
   };
+
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
@@ -160,10 +169,35 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         </div>
       )}
 
+      {shot && (
+        <div className="absolute inset-x-0 bottom-24 space-y-1 px-5">
+          <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-300">
+            Nome do arquivo · pasta {GALLERY_FOLDER}
+          </label>
+          <div className="flex items-center gap-2 rounded-xl bg-slate-900/85 px-3 py-2 backdrop-blur">
+            <input
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none"
+              placeholder="nome-da-foto"
+            />
+            <span className="text-sm text-slate-400">.jpg</span>
+          </div>
+          {status && <p className="text-[11px] text-yellow-300">{status}</p>}
+        </div>
+      )}
+
       <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 p-5">
         <button
           type="button"
-          onClick={shot ? () => setShot(null) : onClose}
+          onClick={
+            shot
+              ? () => {
+                  setShot(null);
+                  setStatus(null);
+                }
+              : onClose
+          }
           className="rounded-full bg-slate-800/90 px-4 py-2 text-sm font-semibold text-white"
         >
           {shot ? "Repetir" : "Fechar"}
@@ -172,9 +206,10 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           <button
             type="button"
             onClick={save}
-            className="rounded-full bg-yellow-300 px-6 py-2 text-sm font-bold text-slate-900"
+            disabled={saving}
+            className="rounded-full bg-yellow-300 px-6 py-2 text-sm font-bold text-slate-900 disabled:opacity-60"
           >
-            Salvar foto
+            {saving ? "Salvando…" : "Salvar na galeria"}
           </button>
         ) : (
           <button
@@ -186,6 +221,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         )}
         <div className="w-16" />
       </div>
+
     </div>
   );
 }
