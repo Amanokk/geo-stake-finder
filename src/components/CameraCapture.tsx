@@ -116,15 +116,20 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     ctx.textAlign = "left";
 
     setShot(canvas.toDataURL("image/jpeg", 0.92));
+    const p = (n: number) => String(n).padStart(2, "0");
+    setFileName(
+      `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
+    );
   }, [coords, lines, stamp.estaca]);
 
-  const save = () => {
-    if (!shot) return;
-    const a = document.createElement("a");
-    a.href = shot;
-    a.download = `estaca-${stamp.estaca ?? "foto"}-${Date.now()}.jpg`;
-    a.click();
+  const save = async () => {
+    if (!shot || saving) return;
+    setSaving(true);
+    const res = await savePhoto(shot, fileName);
+    setSaving(false);
+    setStatus(res.message);
   };
+
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
