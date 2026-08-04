@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Camera } from "lucide-react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { Splash } from "@/components/Splash";
+import { CameraCapture } from "@/components/CameraCapture";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { projectOnPolyline, pointAtChainage, haversine, type LatLng } from "@/lib/geo";
 import { stakeAtChainage } from "@/lib/stakes";
@@ -97,6 +99,8 @@ function Index() {
   const poolRef = useRef<GoogleMarkerInstance[]>([]);
   const followRef = useRef(true);
   const lastCenterRef = useRef<LatLng | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+
 
   const posKey = geo.position ? quantize(geo.position) : null;
   const match = useMemo(
@@ -365,15 +369,38 @@ function Index() {
           <div className="pointer-events-auto rounded-full bg-slate-900/80 px-3 py-1.5 text-xs text-slate-200 backdrop-blur">
             GPS ±{geo.accuracy ? geo.accuracy.toFixed(0) : "--"} m
           </div>
-          <button
-            type="button"
-            onClick={recenter}
-            className="pointer-events-auto rounded-full bg-yellow-300 px-4 py-1.5 text-xs font-bold text-slate-900"
-          >
-            Centralizar
-          </button>
+          <div className="pointer-events-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCameraOpen(true)}
+              aria-label="Abrir câmera com carimbo de estaca"
+              className="grid h-10 w-10 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
+            >
+              <Camera size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={recenter}
+              className="rounded-full bg-yellow-300 px-4 py-1.5 text-xs font-bold text-slate-900"
+            >
+              Centralizar
+            </button>
+          </div>
         </div>
       </div>
+
+      {cameraOpen && (
+        <CameraCapture
+          onClose={() => setCameraOpen(false)}
+          stamp={{
+            estaca: match ? `E-${match.estaca}` : null,
+            street: match?.street.name ?? null,
+            lat: geo.position?.lat ?? null,
+            lng: geo.position?.lng ?? null,
+          }}
+        />
+      )}
     </div>
+
   );
 }
