@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Camera } from "lucide-react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { Splash } from "@/components/Splash";
+import { CameraCapture } from "@/components/CameraCapture";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { projectOnPolyline, pointAtChainage, haversine, type LatLng } from "@/lib/geo";
 import { stakeAtChainage } from "@/lib/stakes";
