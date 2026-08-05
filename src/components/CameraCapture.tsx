@@ -195,29 +195,40 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             muted
             className="h-full w-full object-cover"
           />
-          {/* Prévia dos carimbos */}
-          {stamp.estaca && (
-            <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
-              {stamp.estaca}
+          {/* Carimbos deitados: leem-se corretamente com o celular de lado,
+              na mesma posição em que saem na foto (que é salva na horizontal). */}
+          <div
+            className="pointer-events-none absolute left-1/2 top-1/2 origin-center"
+            style={{
+              width: "100dvh",
+              height: "100dvw",
+              transform: "translate(-50%, -50%) rotate(90deg)",
+            }}
+          >
+            {stamp.estaca && (
+              <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
+                {stamp.estaca}
+              </div>
+            )}
+            {mapUrl && (
+              <img
+                src={mapUrl}
+                alt="Mini mapa da localização atual"
+                className="absolute bottom-0 left-0 h-24 w-24 object-cover opacity-90"
+              />
+            )}
+            <div className="absolute bottom-0 right-0 bg-black/70 px-3 py-2 text-right text-xs font-semibold leading-snug text-white">
+              <div>{formatDate(now)}</div>
+              {lines.map((l) => (
+                <div key={l}>{l}</div>
+              ))}
+              {coords && <div>{coords}</div>}
             </div>
-          )}
-          {mapUrl && (
-            <img
-              src={mapUrl}
-              alt="Mini mapa da localização atual"
-              className="absolute bottom-24 left-0 h-24 w-24 object-cover opacity-90"
-            />
-          )}
-          <div className="absolute bottom-24 right-0 bg-black/70 px-3 py-2 text-right text-xs font-semibold leading-snug text-white">
-            <div>{formatDate(now)}</div>
-            {lines.map((l) => (
-              <div key={l}>{l}</div>
-            ))}
-            {coords && <div>{coords}</div>}
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[11px] font-semibold text-white/60">
+              Vire o celular de lado
+            </div>
           </div>
-          <div className="absolute inset-x-0 top-16 text-center text-[11px] font-semibold text-white/70">
-            A foto é salva na horizontal
-          </div>
+
 
         </>
 
