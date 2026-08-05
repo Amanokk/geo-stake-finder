@@ -93,85 +93,86 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const capture = useCallback(() => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return;
-    const w = video.videoWidth;
-    const h = video.videoHeight;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    const portrait = vh > vw;
+    // A foto sai sempre deitada (paisagem), como no exemplo.
+    const w = portrait ? vh : vw;
+    const h = portrait ? vw : vh;
     const canvas = document.createElement("canvas");
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(video, 0, 0, w, h);
+    if (portrait) {
+      ctx.save();
+      ctx.translate(w, 0);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(video, 0, 0, vw, vh);
+      ctx.restore();
+    } else {
+      ctx.drawImage(video, 0, 0, w, h);
+    }
 
     const s = w / 1600; // escala de referência
     const date = new Date();
 
-    // Faixa horizontal no rodapé: mapa + data/endereço + estaca
-    const margin = 20 * s;
-    const barH = 200 * s;
-    const bx = margin;
-    const by = h - barH - margin;
-    const barW = w - margin * 2;
-    ctx.fillStyle = "rgba(0,0,0,0.72)";
-    ctx.fillRect(bx, by, barW, barH);
+    // Etiqueta da estaca (canto superior esquerdo)
+    if (stamp.estaca) {
+      const text = stamp.estaca;
+      ctx.font = `800 ${Math.round(56 * s)}px system-ui, sans-serif`;
+      const tw = ctx.measureText(text).width;
+      const padX = 24 * s;
+      const padY = 16 * s;
+      const boxH = Math.round(76 * s);
+      ctx.fillStyle = "rgba(15,23,42,0.85)";
+      ctx.fillRect(24 * s, 24 * s, tw + padX * 2, boxH);
+      ctx.fillStyle = "#facc15";
+      ctx.textBaseline = "top";
+      ctx.fillText(text, 24 * s + padX, 24 * s + padY);
+    }
 
-    const pad = 18 * s;
-    const mapSize = barH - pad * 2;
-    let cursorX = bx + pad;
+    // Bloco de data/endereço (canto inferior direito)
+    const stampLines = [formatDate(date), ...lines, ...(coords ? [coords] : [])];
+    const fs = Math.round(40 * s);
+    ctx.font = `600 ${fs}px system-ui, sans-serif`;
+    const maxW = Math.max(...stampLines.map((l) => ctx.measureText(l).width));
+    const lineH = fs * 1.25;
+    const padX2 = 24 * s;
+    const padY2 = 18 * s;
+    const boxW = maxW + padX2 * 2;
+    const boxH2 = stampLines.length * lineH + padY2 * 2;
+    const bx = w - boxW;
+    const by = h - boxH2;
+    ctx.fillStyle = "rgba(0,0,0,0.72)";
+    ctx.fillRect(bx, by, boxW, boxH2);
+    ctx.fillStyle = "#ffffff";
+    ctx.textBaseline = "top";
+    ctx.textAlign = "right";
+    stampLines.forEach((l, i) => {
+      ctx.fillText(l, bx + boxW - padX2, by + padY2 + i * lineH);
+    });
+    ctx.textAlign = "left";
+
+    // Miniatura do mapa (canto inferior esquerdo), como no exemplo
     const mapImg = mapImgRef.current;
     if (mapImg) {
+      const mapS = boxH2;
+      const mx = 0;
+      const my = h - mapS;
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(cursorX, by + pad, mapSize, mapSize);
-      ctx.clip();
-      ctx.drawImage(mapImg, cursorX, by + pad, mapSize, mapSize);
+      ctx.globalAlpha = 0.92;
+      ctx.drawImage(mapImg, mx, my, mapS, mapS);
       ctx.restore();
-      ctx.strokeStyle = "rgba(255,255,255,0.35)";
-      ctx.lineWidth = 2 * s;
-      ctx.strokeRect(cursorX, by + pad, mapSize, mapSize);
-      cursorX += mapSize + pad;
     }
-
-    // Estaca à direita da faixa
-    ctx.textBaseline = "middle";
-    let rightLimit = bx + barW - pad;
-    if (stamp.estaca) {
-      ctx.font = `900 ${Math.round(64 * s)}px system-ui, sans-serif`;
-      const tw = ctx.measureText(stamp.estaca).width;
-      ctx.fillStyle = "#facc15";
-      ctx.textAlign = "right";
-      ctx.fillText(stamp.estaca, rightLimit, by + barH / 2);
-      rightLimit -= tw + pad * 2;
-    }
-
-    // Bloco de texto horizontalizado
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#ffffff";
-    const dateFs = Math.round(46 * s);
-    const infoFs = Math.round(34 * s);
-    const address = [stamp.street, "Retiro São Joaquim", "Itaboraí", "Rio de Janeiro"]
-      .filter(Boolean)
-      .join(" · ");
-    const textTop = by + pad;
-    ctx.textBaseline = "top";
-    ctx.font = `800 ${dateFs}px system-ui, sans-serif`;
-    ctx.fillText(formatDate(date), cursorX, textTop);
-    ctx.font = `600 ${infoFs}px system-ui, sans-serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.fillText(address, cursorX, textTop + dateFs * 1.35);
-    if (coords) {
-      ctx.fillStyle = "rgba(255,255,255,0.75)";
-      ctx.fillText(coords, cursorX, textTop + dateFs * 1.35 + infoFs * 1.4);
-    }
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-
 
     setShot(canvas.toDataURL("image/jpeg", 0.92));
     const p = (n: number) => String(n).padStart(2, "0");
     setFileName(
       `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
     );
-  }, [coords, stamp.estaca, stamp.street]);
+  }, [coords, lines, stamp.estaca]);
+
 
   const save = async () => {
     if (!shot || saving) return;
