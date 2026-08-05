@@ -13,20 +13,43 @@ function formatDate(d: Date) {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+function staticMapUrl(lat: number, lng: number, size = 320) {
+  const key = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=${size}x${size}&scale=2&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${key}`;
+}
+
 export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const mapImgRef = useRef<HTMLImageElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shot, setShot] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const mapUrl =
+    stamp.lat !== null && stamp.lng !== null ? staticMapUrl(stamp.lat, stamp.lng) : null;
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15000);
     return () => clearInterval(t);
   }, []);
+
+  // Miniatura do mapa carregada com CORS para poder ser desenhada no canvas.
+  useEffect(() => {
+    if (!mapUrl) {
+      mapImgRef.current = null;
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      mapImgRef.current = img;
+    };
+    img.src = mapUrl;
+  }, [mapUrl]);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -82,49 +105,73 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     const s = w / 1600; // escala de referência
     const date = new Date();
 
-    // Etiqueta da estaca (canto superior esquerdo)
-    if (stamp.estaca) {
-      const text = stamp.estaca;
-      ctx.font = `800 ${Math.round(56 * s)}px system-ui, sans-serif`;
-      const tw = ctx.measureText(text).width;
-      const padX = 24 * s;
-      const padY = 16 * s;
-      const boxH = Math.round(76 * s);
-      ctx.fillStyle = "rgba(15,23,42,0.85)";
-      ctx.fillRect(24 * s, 24 * s, tw + padX * 2, boxH);
-      ctx.fillStyle = "#facc15";
-      ctx.textBaseline = "top";
-      ctx.fillText(text, 24 * s + padX, 24 * s + padY);
+    // Faixa horizontal no rodapé: mapa + data/endereço + estaca
+    const margin = 20 * s;
+    const barH = 200 * s;
+    const bx = margin;
+    const by = h - barH - margin;
+    const barW = w - margin * 2;
+    ctx.fillStyle = "rgba(0,0,0,0.72)";
+    ctx.fillRect(bx, by, barW, barH);
+
+    const pad = 18 * s;
+    const mapSize = barH - pad * 2;
+    let cursorX = bx + pad;
+    const mapImg = mapImgRef.current;
+    if (mapImg) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(cursorX, by + pad, mapSize, mapSize);
+      ctx.clip();
+      ctx.drawImage(mapImg, cursorX, by + pad, mapSize, mapSize);
+      ctx.restore();
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.lineWidth = 2 * s;
+      ctx.strokeRect(cursorX, by + pad, mapSize, mapSize);
+      cursorX += mapSize + pad;
     }
 
-    // Bloco de data/endereço (canto inferior direito)
-    const stampLines = [formatDate(date), ...lines, ...(coords ? [coords] : [])];
-    const fs = Math.round(40 * s);
-    ctx.font = `600 ${fs}px system-ui, sans-serif`;
-    const maxW = Math.max(...stampLines.map((l) => ctx.measureText(l).width));
-    const lineH = fs * 1.25;
-    const padX2 = 24 * s;
-    const padY2 = 18 * s;
-    const boxW = maxW + padX2 * 2;
-    const boxH2 = stampLines.length * lineH + padY2 * 2;
-    const bx = w - boxW - 16 * s;
-    const by = h - boxH2 - 16 * s;
-    ctx.fillStyle = "rgba(0,0,0,0.72)";
-    ctx.fillRect(bx, by, boxW, boxH2);
-    ctx.fillStyle = "#ffffff";
-    ctx.textBaseline = "top";
-    ctx.textAlign = "right";
-    stampLines.forEach((l, i) => {
-      ctx.fillText(l, bx + boxW - padX2, by + padY2 + i * lineH);
-    });
+    // Estaca à direita da faixa
+    ctx.textBaseline = "middle";
+    let rightLimit = bx + barW - pad;
+    if (stamp.estaca) {
+      ctx.font = `900 ${Math.round(64 * s)}px system-ui, sans-serif`;
+      const tw = ctx.measureText(stamp.estaca).width;
+      ctx.fillStyle = "#facc15";
+      ctx.textAlign = "right";
+      ctx.fillText(stamp.estaca, rightLimit, by + barH / 2);
+      rightLimit -= tw + pad * 2;
+    }
+
+    // Bloco de texto horizontalizado
     ctx.textAlign = "left";
+    ctx.fillStyle = "#ffffff";
+    const dateFs = Math.round(46 * s);
+    const infoFs = Math.round(34 * s);
+    const address = [stamp.street, "Retiro São Joaquim", "Itaboraí", "Rio de Janeiro"]
+      .filter(Boolean)
+      .join(" · ");
+    const textTop = by + pad;
+    ctx.textBaseline = "top";
+    ctx.font = `800 ${dateFs}px system-ui, sans-serif`;
+    ctx.fillText(formatDate(date), cursorX, textTop);
+    ctx.font = `600 ${infoFs}px system-ui, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.fillText(address, cursorX, textTop + dateFs * 1.35);
+    if (coords) {
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      ctx.fillText(coords, cursorX, textTop + dateFs * 1.35 + infoFs * 1.4);
+    }
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+
 
     setShot(canvas.toDataURL("image/jpeg", 0.92));
     const p = (n: number) => String(n).padStart(2, "0");
     setFileName(
       `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
     );
-  }, [coords, lines, stamp.estaca]);
+  }, [coords, stamp.estaca, stamp.street]);
 
   const save = async () => {
     if (!shot || saving) return;
@@ -147,20 +194,28 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             muted
             className="h-full w-full object-cover"
           />
-          {/* Prévia dos carimbos */}
-          {stamp.estaca && (
-            <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
-              {stamp.estaca}
+          {/* Prévia do carimbo horizontal */}
+          <div className="absolute inset-x-3 bottom-24 flex items-center gap-3 rounded-lg bg-black/70 p-2 text-white">
+            {mapUrl && (
+              <img
+                src={mapUrl}
+                alt="Mini mapa da localização atual"
+                className="h-16 w-16 shrink-0 rounded border border-white/30 object-cover"
+              />
+            )}
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="truncate text-sm font-extrabold">{formatDate(now)}</div>
+              <div className="truncate text-[11px] font-semibold text-white/90">
+                {lines.join(" · ")}
+              </div>
+              {coords && <div className="truncate text-[10px] text-white/75">{coords}</div>}
             </div>
-          )}
-          <div className="absolute bottom-24 right-3 rounded bg-black/70 px-3 py-2 text-right text-xs font-semibold leading-snug text-white">
-            <div>{formatDate(now)}</div>
-            {lines.map((l) => (
-              <div key={l}>{l}</div>
-            ))}
-            {coords && <div>{coords}</div>}
+            {stamp.estaca && (
+              <div className="shrink-0 text-xl font-black text-yellow-300">{stamp.estaca}</div>
+            )}
           </div>
         </>
+
       )}
 
       {error && (
