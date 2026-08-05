@@ -171,7 +171,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     setFileName(
       `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
     );
-  }, [coords, lines, stamp.estaca]);
+  }, [coords, stamp.estaca, stamp.street]);
 
   const save = async () => {
     if (!shot || saving) return;
@@ -194,20 +194,28 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             muted
             className="h-full w-full object-cover"
           />
-          {/* Prévia dos carimbos */}
-          {stamp.estaca && (
-            <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
-              {stamp.estaca}
+          {/* Prévia do carimbo horizontal */}
+          <div className="absolute inset-x-3 bottom-24 flex items-center gap-3 rounded-lg bg-black/70 p-2 text-white">
+            {mapUrl && (
+              <img
+                src={mapUrl}
+                alt="Mini mapa da localização atual"
+                className="h-16 w-16 shrink-0 rounded border border-white/30 object-cover"
+              />
+            )}
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="truncate text-sm font-extrabold">{formatDate(now)}</div>
+              <div className="truncate text-[11px] font-semibold text-white/90">
+                {lines.join(" · ")}
+              </div>
+              {coords && <div className="truncate text-[10px] text-white/75">{coords}</div>}
             </div>
-          )}
-          <div className="absolute bottom-24 right-3 rounded bg-black/70 px-3 py-2 text-right text-xs font-semibold leading-snug text-white">
-            <div>{formatDate(now)}</div>
-            {lines.map((l) => (
-              <div key={l}>{l}</div>
-            ))}
-            {coords && <div>{coords}</div>}
+            {stamp.estaca && (
+              <div className="shrink-0 text-xl font-black text-yellow-300">{stamp.estaca}</div>
+            )}
           </div>
         </>
+
       )}
 
       {error && (
