@@ -13,20 +13,43 @@ function formatDate(d: Date) {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+function staticMapUrl(lat: number, lng: number, size = 320) {
+  const key = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=${size}x${size}&scale=2&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${key}`;
+}
+
 export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const mapImgRef = useRef<HTMLImageElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shot, setShot] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const mapUrl =
+    stamp.lat !== null && stamp.lng !== null ? staticMapUrl(stamp.lat, stamp.lng) : null;
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15000);
     return () => clearInterval(t);
   }, []);
+
+  // Miniatura do mapa carregada com CORS para poder ser desenhada no canvas.
+  useEffect(() => {
+    if (!mapUrl) {
+      mapImgRef.current = null;
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      mapImgRef.current = img;
+    };
+    img.src = mapUrl;
+  }, [mapUrl]);
+
 
   useEffect(() => {
     let cancelled = false;
