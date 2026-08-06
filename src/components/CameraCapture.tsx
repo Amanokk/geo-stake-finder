@@ -96,25 +96,43 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     const vw = video.videoWidth;
     const vh = video.videoHeight;
     const portrait = vh > vw;
-    // A foto sai sempre deitada (paisagem), como no exemplo.
-    const w = portrait ? vh : vw;
-    const h = portrait ? vw : vh;
+    // A foto sai sempre deitada (paisagem), independentemente de como o
+    // celular estiver: giramos o quadro conforme a orientação da tela.
+    const clockwise = angle !== 180;
+    const fullW = portrait ? vh : vw;
+    const fullH = portrait ? vw : vh;
+    // Recorte central em 16:9 (formato paisagem padrão)
+    const target = 16 / 9;
+    let w = fullW;
+    let h = fullH;
+    if (fullW / fullH > target) w = Math.round(fullH * target);
+    else h = Math.round(fullW / target);
+    const dx = Math.round((fullW - w) / 2);
+    const dy = Math.round((fullH - h) / 2);
     const canvas = document.createElement("canvas");
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    ctx.save();
+    ctx.translate(-dx, -dy);
     if (portrait) {
-      ctx.save();
-      ctx.translate(w, 0);
-      ctx.rotate(Math.PI / 2);
-      ctx.drawImage(video, 0, 0, vw, vh);
-      ctx.restore();
-    } else {
-      ctx.drawImage(video, 0, 0, w, h);
+      if (clockwise) {
+        ctx.translate(fullW, 0);
+        ctx.rotate(Math.PI / 2);
+      } else {
+        ctx.translate(0, fullH);
+        ctx.rotate(-Math.PI / 2);
+      }
+    } else if (angle === 180) {
+      ctx.translate(fullW, fullH);
+      ctx.rotate(Math.PI);
     }
+    ctx.drawImage(video, 0, 0, vw, vh);
+    ctx.restore();
 
     const s = w / 1600; // escala de referência
+
     const date = new Date();
 
     // Etiqueta da estaca (canto superior esquerdo)
