@@ -31,10 +31,31 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const mapUrl =
     stamp.lat !== null && stamp.lng !== null ? staticMapUrl(stamp.lat, stamp.lng) : null;
 
+  const [angle, setAngle] = useState(0);
+  const [landscape, setLandscape] = useState(false);
+
+  // Rotatividade automática de layout: acompanha a orientação da tela.
+  useEffect(() => {
+    const read = () => {
+      const so = window.screen?.orientation;
+      const a = typeof so?.angle === "number" ? so.angle : ((window as unknown as { orientation?: number }).orientation ?? 0);
+      setAngle(((a % 360) + 360) % 360);
+      setLandscape(window.innerWidth > window.innerHeight);
+    };
+    read();
+    window.addEventListener("resize", read);
+    window.screen?.orientation?.addEventListener?.("change", read);
+    return () => {
+      window.removeEventListener("resize", read);
+      window.screen?.orientation?.removeEventListener?.("change", read);
+    };
+  }, []);
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15000);
     return () => clearInterval(t);
   }, []);
+
 
   // Miniatura do mapa carregada com CORS para poder ser desenhada no canvas.
   useEffect(() => {
