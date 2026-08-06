@@ -265,9 +265,12 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               ))}
               {coords && <div>{coords}</div>}
             </div>
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[11px] font-semibold text-white/60">
-              Vire o celular de lado
-            </div>
+            {!landscape && (
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[11px] font-semibold text-white/60">
+                Vire o celular de lado
+              </div>
+            )}
+
           </div>
 
 
