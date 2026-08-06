@@ -31,10 +31,31 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const mapUrl =
     stamp.lat !== null && stamp.lng !== null ? staticMapUrl(stamp.lat, stamp.lng) : null;
 
+  const [angle, setAngle] = useState(0);
+  const [landscape, setLandscape] = useState(false);
+
+  // Rotatividade automática de layout: acompanha a orientação da tela.
+  useEffect(() => {
+    const read = () => {
+      const so = window.screen?.orientation;
+      const a = typeof so?.angle === "number" ? so.angle : ((window as unknown as { orientation?: number }).orientation ?? 0);
+      setAngle(((a % 360) + 360) % 360);
+      setLandscape(window.innerWidth > window.innerHeight);
+    };
+    read();
+    window.addEventListener("resize", read);
+    window.screen?.orientation?.addEventListener?.("change", read);
+    return () => {
+      window.removeEventListener("resize", read);
+      window.screen?.orientation?.removeEventListener?.("change", read);
+    };
+  }, []);
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15000);
     return () => clearInterval(t);
   }, []);
+
 
   // Miniatura do mapa carregada com CORS para poder ser desenhada no canvas.
   useEffect(() => {
@@ -96,25 +117,43 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     const vw = video.videoWidth;
     const vh = video.videoHeight;
     const portrait = vh > vw;
-    // A foto sai sempre deitada (paisagem), como no exemplo.
-    const w = portrait ? vh : vw;
-    const h = portrait ? vw : vh;
+    // A foto sai sempre deitada (paisagem), independentemente de como o
+    // celular estiver: giramos o quadro conforme a orientação da tela.
+    const clockwise = angle !== 180;
+    const fullW = portrait ? vh : vw;
+    const fullH = portrait ? vw : vh;
+    // Recorte central em 16:9 (formato paisagem padrão)
+    const target = 16 / 9;
+    let w = fullW;
+    let h = fullH;
+    if (fullW / fullH > target) w = Math.round(fullH * target);
+    else h = Math.round(fullW / target);
+    const dx = Math.round((fullW - w) / 2);
+    const dy = Math.round((fullH - h) / 2);
     const canvas = document.createElement("canvas");
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    ctx.save();
+    ctx.translate(-dx, -dy);
     if (portrait) {
-      ctx.save();
-      ctx.translate(w, 0);
-      ctx.rotate(Math.PI / 2);
-      ctx.drawImage(video, 0, 0, vw, vh);
-      ctx.restore();
-    } else {
-      ctx.drawImage(video, 0, 0, w, h);
+      if (clockwise) {
+        ctx.translate(fullW, 0);
+        ctx.rotate(Math.PI / 2);
+      } else {
+        ctx.translate(0, fullH);
+        ctx.rotate(-Math.PI / 2);
+      }
+    } else if (angle === 180) {
+      ctx.translate(fullW, fullH);
+      ctx.rotate(Math.PI);
     }
+    ctx.drawImage(video, 0, 0, vw, vh);
+    ctx.restore();
 
     const s = w / 1600; // escala de referência
+
     const date = new Date();
 
     // Etiqueta da estaca (canto superior esquerdo)
@@ -171,7 +210,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     setFileName(
       `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
     );
-  }, [coords, lines, stamp.estaca]);
+  }, [angle, coords, lines, stamp.estaca]);
 
 
   const save = async () => {
@@ -195,16 +234,18 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             muted
             className="h-full w-full object-cover"
           />
-          {/* Carimbos deitados: leem-se corretamente com o celular de lado,
-              na mesma posição em que saem na foto (que é salva na horizontal). */}
+          {/* Layout rotativo automático: com o celular em pé os carimbos
+              aparecem deitados; ao girar para paisagem eles ficam de pé,
+              sempre na mesma posição em que saem na foto (horizontal). */}
           <div
-            className="pointer-events-none absolute left-1/2 top-1/2 origin-center"
+            className="pointer-events-none absolute left-1/2 top-1/2 origin-center transition-transform duration-200"
             style={{
-              width: "100dvh",
-              height: "100dvw",
-              transform: "translate(-50%, -50%) rotate(90deg)",
+              width: landscape ? "100dvw" : "100dvh",
+              height: landscape ? "100dvh" : "100dvw",
+              transform: `translate(-50%, -50%) rotate(${landscape ? 0 : 90}deg)`,
             }}
           >
+
             {stamp.estaca && (
               <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
                 {stamp.estaca}
@@ -224,9 +265,12 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               ))}
               {coords && <div>{coords}</div>}
             </div>
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[11px] font-semibold text-white/60">
-              Vire o celular de lado
-            </div>
+            {!landscape && (
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[11px] font-semibold text-white/60">
+                Vire o celular de lado
+              </div>
+            )}
+
           </div>
 
 
