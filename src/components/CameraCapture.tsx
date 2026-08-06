@@ -234,16 +234,18 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             muted
             className="h-full w-full object-cover"
           />
-          {/* Carimbos deitados: leem-se corretamente com o celular de lado,
-              na mesma posição em que saem na foto (que é salva na horizontal). */}
+          {/* Layout rotativo automático: com o celular em pé os carimbos
+              aparecem deitados; ao girar para paisagem eles ficam de pé,
+              sempre na mesma posição em que saem na foto (horizontal). */}
           <div
-            className="pointer-events-none absolute left-1/2 top-1/2 origin-center"
+            className="pointer-events-none absolute left-1/2 top-1/2 origin-center transition-transform duration-200"
             style={{
-              width: "100dvh",
-              height: "100dvw",
-              transform: "translate(-50%, -50%) rotate(90deg)",
+              width: landscape ? "100dvw" : "100dvh",
+              height: landscape ? "100dvh" : "100dvw",
+              transform: `translate(-50%, -50%) rotate(${landscape ? 0 : 90}deg)`,
             }}
           >
+
             {stamp.estaca && (
               <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
                 {stamp.estaca}
