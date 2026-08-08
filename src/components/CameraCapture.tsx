@@ -288,6 +288,21 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
       )}
 
+      {/* Área fixa (sempre de pé) mostrando a estaca que será carimbada na foto */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3">
+        <div className="flex items-center gap-2 rounded-full bg-slate-900/85 px-4 py-2 backdrop-blur">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">
+            Estaca na foto
+          </span>
+          <span
+            className={`text-base font-black ${stamp.estaca ? "text-yellow-300" : "text-red-300"}`}
+          >
+            {stamp.estaca ?? "Sem estaca"}
+          </span>
+        </div>
+      </div>
+
+
       {error && (
         <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 rounded-xl bg-slate-900 p-4 text-center text-sm text-red-300">
           {error}
