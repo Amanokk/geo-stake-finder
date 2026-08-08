@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera } from "lucide-react";
+import { Camera, FileDown } from "lucide-react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { Splash } from "@/components/Splash";
 import { CameraCapture } from "@/components/CameraCapture";
@@ -101,6 +101,7 @@ function Index() {
   const followRef = useRef(true);
   const lastCenterRef = useRef<LatLng | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
 
 
   const posKey = geo.position ? quantize(geo.position) : null;
