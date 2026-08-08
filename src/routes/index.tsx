@@ -393,8 +393,12 @@ function Index() {
         <CameraCapture
           onClose={() => setCameraOpen(false)}
           stamp={{
-            estaca: match ? `E-${match.estaca}` : null,
-            street: match?.street.name ?? null,
+            estaca: (match ?? (geo.position ? findNearestStake(geo.position, 800) : null))
+              ? `E-${(match ?? findNearestStake(geo.position!, 800))!.estaca}`
+              : null,
+            street:
+              (match ?? (geo.position ? findNearestStake(geo.position, 800) : null))?.street.name ??
+              null,
             lat: geo.position?.lat ?? null,
             lng: geo.position?.lng ?? null,
           }}

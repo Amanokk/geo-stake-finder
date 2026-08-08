@@ -25,7 +25,6 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const mapImgRef = useRef<HTMLImageElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shot, setShot] = useState<string | null>(null);
-  const [, setShotAt] = useState<Date | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
@@ -209,7 +208,6 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       ctx.restore();
     }
 
-    setShotAt(date);
     setShot(
       addExif(canvas.toDataURL("image/jpeg", 0.92), {
         lat: stamp.lat,
