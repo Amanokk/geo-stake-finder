@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { savePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
+import { addExif } from "@/lib/exif";
 
 export type CameraStamp = {
   estaca: string | null;
@@ -24,6 +25,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const mapImgRef = useRef<HTMLImageElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shot, setShot] = useState<string | null>(null);
+  const [, setShotAt] = useState<Date | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
@@ -159,8 +161,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     const date = new Date();
 
     // Etiqueta da estaca (canto superior esquerdo)
-    if (stamp.estaca) {
-      const text = stamp.estaca;
+    {
+      const text = stamp.estaca ?? "Sem estaca";
       ctx.font = `800 ${Math.round(56 * s)}px system-ui, sans-serif`;
       const tw = ctx.measureText(text).width;
       const padX = 24 * s;
@@ -222,7 +224,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     setFileName(
       `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
     );
-  }, [angle, coords, lines, stamp.estaca]);
+  }, [angle, coords, lines, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
 
 
   const save = async () => {
@@ -258,11 +260,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             }}
           >
 
-            {stamp.estaca && (
-              <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
-                {stamp.estaca}
-              </div>
-            )}
+            <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
+              {stamp.estaca ?? "Sem estaca"}
+            </div>
             {mapUrl && (
               <img
                 src={mapUrl}
