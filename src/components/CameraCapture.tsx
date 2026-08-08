@@ -207,7 +207,17 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       ctx.restore();
     }
 
-    setShot(canvas.toDataURL("image/jpeg", 0.92));
+    setShotAt(date);
+    setShot(
+      addExif(canvas.toDataURL("image/jpeg", 0.92), {
+        lat: stamp.lat,
+        lng: stamp.lng,
+        estaca: stamp.estaca,
+        street: stamp.street,
+        date,
+      }),
+    );
+
     const p = (n: number) => String(n).padStart(2, "0");
     setFileName(
       `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
