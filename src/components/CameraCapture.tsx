@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { savePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
+import { addPhotoLog } from "@/lib/photoLog";
 
 export type CameraStamp = {
   estaca: string | null;
@@ -229,6 +230,16 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     if (!shot || saving) return;
     setSaving(true);
     const res = await savePhoto(shot, fileName);
+    if (res.ok) {
+      addPhotoLog({
+        file: `${fileName}.jpg`,
+        timestamp: new Date().toISOString(),
+        lat: stamp.lat,
+        lng: stamp.lng,
+        street: stamp.street,
+        estaca: stamp.estaca,
+      });
+    }
     setSaving(false);
     setStatus(res.message);
   };
