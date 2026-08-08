@@ -119,7 +119,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     const portrait = vh > vw;
     // A foto sai sempre deitada (paisagem), independentemente de como o
     // celular estiver: giramos o quadro conforme a orientação da tela.
-    const clockwise = angle !== 180;
+    // Com a tela em pé o topo da foto é o lado direito da tela → giro anti-horário.
+    const clockwise = angle === 180;
+
     const fullW = portrait ? vh : vw;
     const fullH = portrait ? vw : vh;
     // Recorte central em 16:9 (formato paisagem padrão)
