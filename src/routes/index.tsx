@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera } from "lucide-react";
+import { Camera, FileDown } from "lucide-react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { Splash } from "@/components/Splash";
 import { CameraCapture } from "@/components/CameraCapture";
+import { exportPhotoLogCsv } from "@/lib/photoLog";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { projectOnPolyline, pointAtChainage, haversine, type LatLng } from "@/lib/geo";
 import { stakeAtChainage } from "@/lib/stakes";
@@ -100,6 +101,7 @@ function Index() {
   const followRef = useRef(true);
   const lastCenterRef = useRef<LatLng | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
 
 
   const posKey = geo.position ? quantize(geo.position) : null;
@@ -367,6 +369,8 @@ function Index() {
         )}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 p-3">
           <div className="pointer-events-auto rounded-full bg-slate-900/80 px-3 py-1.5 text-xs text-slate-200 backdrop-blur">
+            {exportMsg ? exportMsg : null}
+            {exportMsg ? " · " : null}
             GPS ±{geo.accuracy ? geo.accuracy.toFixed(0) : "--"} m
           </div>
           <div className="pointer-events-auto flex items-center gap-2">
@@ -377,6 +381,18 @@ function Index() {
               className="grid h-10 w-10 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
             >
               <Camera size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const n = exportPhotoLogCsv();
+                setExportMsg(n ? `${n} foto(s) exportadas` : "Nenhuma foto salva ainda");
+                setTimeout(() => setExportMsg(null), 3000);
+              }}
+              aria-label="Exportar CSV das fotos salvas"
+              className="grid h-10 w-10 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
+            >
+              <FileDown size={18} />
             </button>
             <button
               type="button"
