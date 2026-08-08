@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { savePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
+import { addExif } from "@/lib/exif";
 
 export type CameraStamp = {
   estaca: string | null;
@@ -119,7 +120,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     const portrait = vh > vw;
     // A foto sai sempre deitada (paisagem), independentemente de como o
     // celular estiver: giramos o quadro conforme a orientação da tela.
-    const clockwise = angle !== 180;
+    // Com a tela em pé o topo da foto é o lado direito da tela → giro anti-horário.
+    const clockwise = angle === 180;
+
     const fullW = portrait ? vh : vw;
     const fullH = portrait ? vw : vh;
     // Recorte central em 16:9 (formato paisagem padrão)
@@ -157,8 +160,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     const date = new Date();
 
     // Etiqueta da estaca (canto superior esquerdo)
-    if (stamp.estaca) {
-      const text = stamp.estaca;
+    {
+      const text = stamp.estaca ?? "Sem estaca";
       ctx.font = `800 ${Math.round(56 * s)}px system-ui, sans-serif`;
       const tw = ctx.measureText(text).width;
       const padX = 24 * s;
@@ -205,12 +208,21 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       ctx.restore();
     }
 
-    setShot(canvas.toDataURL("image/jpeg", 0.92));
+    setShot(
+      addExif(canvas.toDataURL("image/jpeg", 0.92), {
+        lat: stamp.lat,
+        lng: stamp.lng,
+        estaca: stamp.estaca,
+        street: stamp.street,
+        date,
+      }),
+    );
+
     const p = (n: number) => String(n).padStart(2, "0");
     setFileName(
       `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
     );
-  }, [angle, coords, lines, stamp.estaca]);
+  }, [angle, coords, lines, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
 
 
   const save = async () => {
@@ -246,11 +258,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             }}
           >
 
-            {stamp.estaca && (
-              <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
-                {stamp.estaca}
-              </div>
-            )}
+            <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
+              {stamp.estaca ?? "Sem estaca"}
+            </div>
             {mapUrl && (
               <img
                 src={mapUrl}
