@@ -177,7 +177,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
     // Bloco de data/endereço (canto inferior direito)
     const stampLines = [formatDate(date), ...lines, ...(coords ? [coords] : [])];
-    const fs = Math.round(40 * s);
+    const fs = Math.round(64 * s);
     ctx.font = `600 ${fs}px system-ui, sans-serif`;
     const maxW = Math.max(...stampLines.map((l) => ctx.measureText(l).width));
     const lineH = fs * 1.25;
@@ -276,10 +276,10 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               <img
                 src={mapUrl}
                 alt="Mini mapa da localização atual"
-                className="absolute bottom-0 left-0 h-24 w-24 object-cover opacity-90"
+                className="absolute bottom-0 left-0 h-40 w-40 object-cover opacity-90"
               />
             )}
-            <div className="absolute bottom-0 right-0 bg-black/70 px-3 py-2 text-right text-xs font-semibold leading-snug text-white">
+            <div className="absolute bottom-0 right-0 bg-black/70 px-4 py-3 text-right text-lg font-semibold leading-snug text-white">
               <div>{formatDate(now)}</div>
               {lines.map((l) => (
                 <div key={l}>{l}</div>
