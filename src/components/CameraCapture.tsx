@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Settings2, X } from "lucide-react";
 import { savePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
@@ -27,13 +27,22 @@ function staticMapUrl(lat: number, lng: number, size = 320) {
   return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=${size}x${size}&scale=2&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${key}`;
 }
 
+/** Relógio isolado: só ele re-renderiza a cada tique, mantendo a prévia fluida. */
+const StampClock = memo(function StampClock({ settings }: { settings: CameraSettings }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), settings.showSeconds ? 1000 : 30000);
+    return () => clearInterval(t);
+  }, [settings.showSeconds]);
+  return <>{formatStamp(stampNow(settings, now), settings)}</>;
+});
+
 export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const mapImgRef = useRef<HTMLImageElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shot, setShot] = useState<string | null>(null);
-  const [now, setNow] = useState(() => new Date());
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -69,10 +78,6 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
   }, []);
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), settings.showSeconds ? 1000 : 15000);
-    return () => clearInterval(t);
-  }, [settings.showSeconds]);
 
 
   // Miniatura do mapa carregada com CORS para poder ser desenhada no canvas.
@@ -118,13 +123,21 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
   }, []);
 
-  const lines = settings.showAddress
-    ? [stamp.street ?? "Retiro São Joaquim", "Retiro São Joaquim", "Itaboraí", "Rio de Janeiro"]
-    : [];
-  const coords =
-    settings.showCoords && stamp.lat !== null && stamp.lng !== null
-      ? `${stamp.lat.toFixed(6)}, ${stamp.lng.toFixed(6)}`
-      : null;
+  const lines = useMemo(
+    () =>
+      settings.showAddress
+        ? [stamp.street ?? "Retiro São Joaquim", "Retiro São Joaquim", "Itaboraí", "Rio de Janeiro"]
+        : [],
+    [settings.showAddress, stamp.street],
+  );
+  const coords = useMemo(
+    () =>
+      settings.showCoords && stamp.lat !== null && stamp.lng !== null
+        ? `${stamp.lat.toFixed(6)}, ${stamp.lng.toFixed(6)}`
+        : null,
+    [settings.showCoords, stamp.lat, stamp.lng],
+  );
+  const alpha = Math.min(1, Math.max(0, settings.opacity ?? 0.75));
 
   const capture = useCallback(() => {
     const video = videoRef.current;
@@ -181,7 +194,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       const padX = 24 * s;
       const padY = 16 * s;
       const boxH = Math.round(76 * s);
-      ctx.fillStyle = "rgba(15,23,42,0.85)";
+      ctx.fillStyle = `rgba(15,23,42,${alpha})`;
       ctx.fillRect(24 * s, 24 * s, tw + padX * 2, boxH);
       ctx.fillStyle = "#facc15";
       ctx.textBaseline = "top";
@@ -200,7 +213,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     const boxH2 = stampLines.length * lineH + padY2 * 2;
     const bx = w - boxW;
     const by = h - boxH2;
-    ctx.fillStyle = "rgba(0,0,0,0.72)";
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
     ctx.fillRect(bx, by, boxW, boxH2);
     ctx.fillStyle = "#ffffff";
     ctx.textBaseline = "top";
@@ -217,7 +230,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       const mx = settings.mapSide === "direita" ? w - mapS : 0;
       const my = h - mapS;
       ctx.save();
-      ctx.globalAlpha = 0.92;
+      ctx.globalAlpha = Math.max(0.2, alpha + 0.2);
       ctx.drawImage(mapImg, mx, my, mapS, mapS);
       ctx.restore();
     }
@@ -236,7 +249,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     setFileName(
       `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
     );
-  }, [angle, coords, lines, settings, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
+  }, [alpha, angle, coords, lines, settings, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
 
 
   const save = async () => {
@@ -269,22 +282,28 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             playsInline
             muted
             className="h-full w-full object-cover"
+            style={{ transform: "translateZ(0)", backfaceVisibility: "hidden" }}
           />
           {/* Layout rotativo automático: com o celular em pé os carimbos
               aparecem deitados; ao girar para paisagem eles ficam de pé,
               sempre na mesma posição em que saem na foto (horizontal). */}
           <div
-            className="pointer-events-none absolute left-1/2 top-1/2 origin-center transition-transform duration-200"
+            className="pointer-events-none absolute left-1/2 top-1/2 origin-center"
             style={{
               width: landscape ? "100dvw" : "100dvh",
               height: landscape ? "100dvh" : "100dvw",
-              transform: `translate(-50%, -50%) rotate(${landscape ? 0 : 90}deg)`,
+              transform: `translate(-50%, -50%) rotate(${landscape ? 0 : 90}deg) translateZ(0)`,
+              willChange: "transform",
+              contain: "layout paint",
             }}
           >
 
             <div
-              className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 font-black text-yellow-300"
-              style={{ fontSize: `${1.25 * SIZE_FACTOR[settings.size]}rem` }}
+              className="absolute left-3 top-3 rounded px-3 py-1.5 font-black text-yellow-300"
+              style={{
+                fontSize: `${1.25 * SIZE_FACTOR[settings.size]}rem`,
+                backgroundColor: `rgba(15,23,42,${alpha})`,
+              }}
             >
               {stamp.estaca ?? "Sem estaca"}
             </div>
@@ -292,15 +311,24 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               <img
                 src={mapUrl}
                 alt="Mini mapa da localização atual"
-                className={`absolute bottom-0 object-cover opacity-90 ${settings.mapSide === "direita" ? "right-0" : "left-0"}`}
-                style={{ height: `${6 * SIZE_FACTOR[settings.size]}rem`, width: `${6 * SIZE_FACTOR[settings.size]}rem` }}
+                className={`absolute bottom-0 object-cover ${settings.mapSide === "direita" ? "right-0" : "left-0"}`}
+                style={{
+                  height: `${6 * SIZE_FACTOR[settings.size]}rem`,
+                  width: `${6 * SIZE_FACTOR[settings.size]}rem`,
+                  opacity: Math.max(0.2, alpha + 0.2),
+                }}
               />
             )}
             <div
-              className="absolute bottom-0 right-0 bg-black/70 px-3 py-2 text-right font-semibold leading-snug text-white"
-              style={{ fontSize: `${0.75 * SIZE_FACTOR[settings.size]}rem` }}
+              className="absolute bottom-0 right-0 px-3 py-2 text-right font-semibold leading-snug text-white"
+              style={{
+                fontSize: `${0.75 * SIZE_FACTOR[settings.size]}rem`,
+                backgroundColor: `rgba(0,0,0,${alpha})`,
+              }}
             >
-              <div>{formatStamp(stampNow(settings, now), settings)}</div>
+              <div>
+                <StampClock settings={settings} />
+              </div>
               {lines.map((l) => (
                 <div key={l}>{l}</div>
               ))}
@@ -321,7 +349,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
       {/* Área fixa (sempre de pé) mostrando a estaca que será carimbada na foto */}
       <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3">
-        <div className="flex items-center gap-2 rounded-full bg-slate-900/85 px-4 py-2 backdrop-blur">
+        <div className="flex items-center gap-2 rounded-full bg-slate-900/85 px-4 py-2">
           <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">
             Estaca na foto
           </span>
@@ -338,13 +366,13 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         type="button"
         aria-label="Configurações da câmera"
         onClick={() => setShowSettings((v) => !v)}
-        className="absolute right-3 top-3 rounded-full bg-slate-900/85 p-2.5 text-white backdrop-blur"
+        className="absolute right-3 top-3 rounded-full bg-slate-900/85 p-2.5 text-white"
       >
         <Settings2 className="h-5 w-5" />
       </button>
 
       {showSettings && (
-        <div className="absolute inset-x-3 top-16 max-h-[70dvh] space-y-4 overflow-y-auto rounded-2xl bg-slate-900/95 p-4 text-sm text-white backdrop-blur">
+        <div className="absolute inset-x-3 top-16 max-h-[70dvh] space-y-4 overflow-y-auto rounded-2xl bg-slate-900/95 p-4 text-sm text-white">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold">Configurações do carimbo</h2>
             <button type="button" aria-label="Fechar configurações" onClick={() => setShowSettings(false)}>
@@ -388,7 +416,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               />
             </label>
             <label className="flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2">
-              <span>Ajuste de hora (min)</span>
+              <span>Ajuste de minutos</span>
               <input
                 type="number"
                 value={settings.timeOffsetMin}
@@ -396,8 +424,35 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
                 className="w-20 rounded bg-slate-700 px-2 py-1 text-right"
               />
             </label>
+            <label className="flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2">
+              <span>Ajuste de segundos</span>
+              <input
+                type="number"
+                value={settings.timeOffsetSec ?? 0}
+                onChange={(e) => update({ timeOffsetSec: Number(e.target.value) || 0 })}
+                className="w-20 rounded bg-slate-700 px-2 py-1 text-right"
+              />
+            </label>
             <p className="text-[11px] text-slate-400">
-              Prévia: {formatStamp(stampNow(settings, now), settings)}
+              Prévia: <StampClock settings={settings} />
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              Transparência do layout
+            </p>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={Math.round(alpha * 100)}
+              onChange={(e) => update({ opacity: Number(e.target.value) / 100 })}
+              className="w-full accent-yellow-300"
+            />
+            <p className="text-[11px] text-slate-400">
+              Fundo do carimbo: {Math.round(alpha * 100)}% opaco (0% = totalmente transparente)
             </p>
           </div>
 
@@ -475,7 +530,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-300">
             Nome do arquivo · pasta {GALLERY_FOLDER}
           </label>
-          <div className="flex items-center gap-2 rounded-xl bg-slate-900/85 px-3 py-2 backdrop-blur">
+          <div className="flex items-center gap-2 rounded-xl bg-slate-900/85 px-3 py-2">
             <input
               value={fileName}
               onChange={(e) => setFileName(e.target.value)}
