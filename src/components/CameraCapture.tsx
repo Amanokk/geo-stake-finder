@@ -78,10 +78,6 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
   }, []);
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), settings.showSeconds ? 1000 : 15000);
-    return () => clearInterval(t);
-  }, [settings.showSeconds]);
 
 
   // Miniatura do mapa carregada com CORS para poder ser desenhada no canvas.
