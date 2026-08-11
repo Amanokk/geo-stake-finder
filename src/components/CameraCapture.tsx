@@ -123,13 +123,21 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
   }, []);
 
-  const lines = settings.showAddress
-    ? [stamp.street ?? "Retiro São Joaquim", "Retiro São Joaquim", "Itaboraí", "Rio de Janeiro"]
-    : [];
-  const coords =
-    settings.showCoords && stamp.lat !== null && stamp.lng !== null
-      ? `${stamp.lat.toFixed(6)}, ${stamp.lng.toFixed(6)}`
-      : null;
+  const lines = useMemo(
+    () =>
+      settings.showAddress
+        ? [stamp.street ?? "Retiro São Joaquim", "Retiro São Joaquim", "Itaboraí", "Rio de Janeiro"]
+        : [],
+    [settings.showAddress, stamp.street],
+  );
+  const coords = useMemo(
+    () =>
+      settings.showCoords && stamp.lat !== null && stamp.lng !== null
+        ? `${stamp.lat.toFixed(6)}, ${stamp.lng.toFixed(6)}`
+        : null,
+    [settings.showCoords, stamp.lat, stamp.lng],
+  );
+  const alpha = Math.min(1, Math.max(0, settings.opacity ?? 0.75));
 
   const capture = useCallback(() => {
     const video = videoRef.current;
