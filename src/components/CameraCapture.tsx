@@ -249,7 +249,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     setFileName(
       `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
     );
-  }, [angle, coords, lines, settings, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
+  }, [alpha, angle, coords, lines, settings, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
 
 
   const save = async () => {
