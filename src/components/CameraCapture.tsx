@@ -346,7 +346,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
       {/* Área fixa (sempre de pé) mostrando a estaca que será carimbada na foto */}
       <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3">
-        <div className="flex items-center gap-2 rounded-full bg-slate-900/85 px-4 py-2 backdrop-blur">
+        <div className="flex items-center gap-2 rounded-full bg-slate-900/85 px-4 py-2">
           <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">
             Estaca na foto
           </span>
@@ -363,13 +363,13 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         type="button"
         aria-label="Configurações da câmera"
         onClick={() => setShowSettings((v) => !v)}
-        className="absolute right-3 top-3 rounded-full bg-slate-900/85 p-2.5 text-white backdrop-blur"
+        className="absolute right-3 top-3 rounded-full bg-slate-900/85 p-2.5 text-white"
       >
         <Settings2 className="h-5 w-5" />
       </button>
 
       {showSettings && (
-        <div className="absolute inset-x-3 top-16 max-h-[70dvh] space-y-4 overflow-y-auto rounded-2xl bg-slate-900/95 p-4 text-sm text-white backdrop-blur">
+        <div className="absolute inset-x-3 top-16 max-h-[70dvh] space-y-4 overflow-y-auto rounded-2xl bg-slate-900/95 p-4 text-sm text-white">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold">Configurações do carimbo</h2>
             <button type="button" aria-label="Fechar configurações" onClick={() => setShowSettings(false)}>
@@ -527,7 +527,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-300">
             Nome do arquivo · pasta {GALLERY_FOLDER}
           </label>
-          <div className="flex items-center gap-2 rounded-xl bg-slate-900/85 px-3 py-2 backdrop-blur">
+          <div className="flex items-center gap-2 rounded-xl bg-slate-900/85 px-3 py-2">
             <input
               value={fileName}
               onChange={(e) => setFileName(e.target.value)}
