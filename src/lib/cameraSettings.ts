@@ -58,7 +58,9 @@ export function saveCameraSettings(s: CameraSettings) {
 }
 
 export function stampNow(settings: CameraSettings, base = new Date()) {
-  return new Date(base.getTime() + settings.timeOffsetMin * 60000);
+  return new Date(
+    base.getTime() + settings.timeOffsetMin * 60000 + (settings.timeOffsetSec || 0) * 1000,
+  );
 }
 
 export function formatStamp(d: Date, s: CameraSettings) {
