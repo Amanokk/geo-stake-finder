@@ -37,6 +37,15 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [settings, setSettings] = useState<CameraSettings>(DEFAULT_CAMERA_SETTINGS);
+  const [showSettings, setShowSettings] = useState(false);
+  useEffect(() => setSettings(loadCameraSettings()), []);
+  const update = (patch: Partial<CameraSettings>) =>
+    setSettings((prev) => {
+      const next = { ...prev, ...patch };
+      saveCameraSettings(next);
+      return next;
+    });
   const mapUrl =
     stamp.lat !== null && stamp.lng !== null ? staticMapUrl(stamp.lat, stamp.lng) : null;
 
@@ -61,9 +70,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   }, []);
 
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 15000);
+    const t = setInterval(() => setNow(new Date()), settings.showSeconds ? 1000 : 15000);
     return () => clearInterval(t);
-  }, []);
+  }, [settings.showSeconds]);
 
 
   // Miniatura do mapa carregada com CORS para poder ser desenhada no canvas.
@@ -109,14 +118,11 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
   }, []);
 
-  const lines = [
-    stamp.street ?? "Retiro São Joaquim",
-    "Retiro São Joaquim",
-    "Itaboraí",
-    "Rio de Janeiro",
-  ];
+  const lines = settings.showAddress
+    ? [stamp.street ?? "Retiro São Joaquim", "Retiro São Joaquim", "Itaboraí", "Rio de Janeiro"]
+    : [];
   const coords =
-    stamp.lat !== null && stamp.lng !== null
+    settings.showCoords && stamp.lat !== null && stamp.lng !== null
       ? `${stamp.lat.toFixed(6)}, ${stamp.lng.toFixed(6)}`
       : null;
 
@@ -163,9 +169,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     ctx.drawImage(video, 0, 0, vw, vh);
     ctx.restore();
 
-    const s = w / 1600; // escala de referência
+    const s = (w / 1600) * SIZE_FACTOR[settings.size]; // escala de referência
 
-    const date = new Date();
+    const date = stampNow(settings);
 
     // Etiqueta da estaca (canto superior esquerdo)
     {
@@ -183,7 +189,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     }
 
     // Bloco de data/endereço (canto inferior direito)
-    const stampLines = [formatDate(date), ...lines, ...(coords ? [coords] : [])];
+    const stampLines = [formatStamp(date, settings), ...lines, ...(coords ? [coords] : [])];
     const fs = Math.round(40 * s);
     ctx.font = `600 ${fs}px system-ui, sans-serif`;
     const maxW = Math.max(...stampLines.map((l) => ctx.measureText(l).width));
@@ -204,11 +210,11 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     });
     ctx.textAlign = "left";
 
-    // Miniatura do mapa (canto inferior esquerdo), como no exemplo
+    // Miniatura do mapa (canto inferior, lado configurável)
     const mapImg = mapImgRef.current;
-    if (mapImg) {
+    if (mapImg && settings.showMap) {
       const mapS = boxH2;
-      const mx = 0;
+      const mx = settings.mapSide === "direita" ? w - mapS : 0;
       const my = h - mapS;
       ctx.save();
       ctx.globalAlpha = 0.92;
@@ -276,18 +282,25 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             }}
           >
 
-            <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
+            <div
+              className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 font-black text-yellow-300"
+              style={{ fontSize: `${1.25 * SIZE_FACTOR[settings.size]}rem` }}
+            >
               {stamp.estaca ?? "Sem estaca"}
             </div>
-            {mapUrl && (
+            {mapUrl && settings.showMap && (
               <img
                 src={mapUrl}
                 alt="Mini mapa da localização atual"
-                className="absolute bottom-0 left-0 h-24 w-24 object-cover opacity-90"
+                className={`absolute bottom-0 object-cover opacity-90 ${settings.mapSide === "direita" ? "right-0" : "left-0"}`}
+                style={{ height: `${6 * SIZE_FACTOR[settings.size]}rem`, width: `${6 * SIZE_FACTOR[settings.size]}rem` }}
               />
             )}
-            <div className="absolute bottom-0 right-0 bg-black/70 px-3 py-2 text-right text-xs font-semibold leading-snug text-white">
-              <div>{formatDate(now)}</div>
+            <div
+              className="absolute bottom-0 right-0 bg-black/70 px-3 py-2 text-right font-semibold leading-snug text-white"
+              style={{ fontSize: `${0.75 * SIZE_FACTOR[settings.size]}rem` }}
+            >
+              <div>{formatStamp(stampNow(settings, now), settings)}</div>
               {lines.map((l) => (
                 <div key={l}>{l}</div>
               ))}
