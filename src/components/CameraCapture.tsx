@@ -413,7 +413,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               />
             </label>
             <label className="flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2">
-              <span>Ajuste de hora (min)</span>
+              <span>Ajuste de minutos</span>
               <input
                 type="number"
                 value={settings.timeOffsetMin}
@@ -421,8 +421,35 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
                 className="w-20 rounded bg-slate-700 px-2 py-1 text-right"
               />
             </label>
+            <label className="flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2">
+              <span>Ajuste de segundos</span>
+              <input
+                type="number"
+                value={settings.timeOffsetSec ?? 0}
+                onChange={(e) => update({ timeOffsetSec: Number(e.target.value) || 0 })}
+                className="w-20 rounded bg-slate-700 px-2 py-1 text-right"
+              />
+            </label>
             <p className="text-[11px] text-slate-400">
-              Prévia: {formatStamp(stampNow(settings, now), settings)}
+              Prévia: <StampClock settings={settings} />
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              Transparência do layout
+            </p>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={Math.round(alpha * 100)}
+              onChange={(e) => update({ opacity: Number(e.target.value) / 100 })}
+              className="w-full accent-yellow-300"
+            />
+            <p className="text-[11px] text-slate-400">
+              Fundo do carimbo: {Math.round(alpha * 100)}% opaco (0% = totalmente transparente)
             </p>
           </div>
 
