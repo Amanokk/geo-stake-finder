@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Settings2, X } from "lucide-react";
 import { savePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
 import { addPhotoLog } from "@/lib/photoLog";
+import {
+  CameraSettings,
+  DEFAULT_CAMERA_SETTINGS,
+  SIZE_FACTOR,
+  StampSize,
+  formatStamp,
+  loadCameraSettings,
+  saveCameraSettings,
+  stampNow,
+} from "@/lib/cameraSettings";
 
 export type CameraStamp = {
   estaca: string | null;
@@ -10,10 +21,6 @@ export type CameraStamp = {
   lng: number | null;
 };
 
-function formatDate(d: Date) {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
 
 function staticMapUrl(lat: number, lng: number, size = 320) {
   const key = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;
@@ -30,6 +37,15 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [settings, setSettings] = useState<CameraSettings>(DEFAULT_CAMERA_SETTINGS);
+  const [showSettings, setShowSettings] = useState(false);
+  useEffect(() => setSettings(loadCameraSettings()), []);
+  const update = (patch: Partial<CameraSettings>) =>
+    setSettings((prev) => {
+      const next = { ...prev, ...patch };
+      saveCameraSettings(next);
+      return next;
+    });
   const mapUrl =
     stamp.lat !== null && stamp.lng !== null ? staticMapUrl(stamp.lat, stamp.lng) : null;
 
@@ -54,9 +70,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   }, []);
 
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 15000);
+    const t = setInterval(() => setNow(new Date()), settings.showSeconds ? 1000 : 15000);
     return () => clearInterval(t);
-  }, []);
+  }, [settings.showSeconds]);
 
 
   // Miniatura do mapa carregada com CORS para poder ser desenhada no canvas.
@@ -102,14 +118,11 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
   }, []);
 
-  const lines = [
-    stamp.street ?? "Retiro São Joaquim",
-    "Retiro São Joaquim",
-    "Itaboraí",
-    "Rio de Janeiro",
-  ];
+  const lines = settings.showAddress
+    ? [stamp.street ?? "Retiro São Joaquim", "Retiro São Joaquim", "Itaboraí", "Rio de Janeiro"]
+    : [];
   const coords =
-    stamp.lat !== null && stamp.lng !== null
+    settings.showCoords && stamp.lat !== null && stamp.lng !== null
       ? `${stamp.lat.toFixed(6)}, ${stamp.lng.toFixed(6)}`
       : null;
 
@@ -156,9 +169,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     ctx.drawImage(video, 0, 0, vw, vh);
     ctx.restore();
 
-    const s = w / 1600; // escala de referência
+    const s = (w / 1600) * SIZE_FACTOR[settings.size]; // escala de referência
 
-    const date = new Date();
+    const date = stampNow(settings);
 
     // Etiqueta da estaca (canto superior esquerdo)
     {
@@ -176,7 +189,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     }
 
     // Bloco de data/endereço (canto inferior direito)
-    const stampLines = [formatDate(date), ...lines, ...(coords ? [coords] : [])];
+    const stampLines = [formatStamp(date, settings), ...lines, ...(coords ? [coords] : [])];
     const fs = Math.round(40 * s);
     ctx.font = `600 ${fs}px system-ui, sans-serif`;
     const maxW = Math.max(...stampLines.map((l) => ctx.measureText(l).width));
@@ -197,11 +210,11 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     });
     ctx.textAlign = "left";
 
-    // Miniatura do mapa (canto inferior esquerdo), como no exemplo
+    // Miniatura do mapa (canto inferior, lado configurável)
     const mapImg = mapImgRef.current;
-    if (mapImg) {
+    if (mapImg && settings.showMap) {
       const mapS = boxH2;
-      const mx = 0;
+      const mx = settings.mapSide === "direita" ? w - mapS : 0;
       const my = h - mapS;
       ctx.save();
       ctx.globalAlpha = 0.92;
@@ -223,7 +236,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     setFileName(
       `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
     );
-  }, [angle, coords, lines, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
+  }, [angle, coords, lines, settings, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
 
 
   const save = async () => {
@@ -269,18 +282,25 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             }}
           >
 
-            <div className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 text-xl font-black text-yellow-300">
+            <div
+              className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 font-black text-yellow-300"
+              style={{ fontSize: `${1.25 * SIZE_FACTOR[settings.size]}rem` }}
+            >
               {stamp.estaca ?? "Sem estaca"}
             </div>
-            {mapUrl && (
+            {mapUrl && settings.showMap && (
               <img
                 src={mapUrl}
                 alt="Mini mapa da localização atual"
-                className="absolute bottom-0 left-0 h-24 w-24 object-cover opacity-90"
+                className={`absolute bottom-0 object-cover opacity-90 ${settings.mapSide === "direita" ? "right-0" : "left-0"}`}
+                style={{ height: `${6 * SIZE_FACTOR[settings.size]}rem`, width: `${6 * SIZE_FACTOR[settings.size]}rem` }}
               />
             )}
-            <div className="absolute bottom-0 right-0 bg-black/70 px-3 py-2 text-right text-xs font-semibold leading-snug text-white">
-              <div>{formatDate(now)}</div>
+            <div
+              className="absolute bottom-0 right-0 bg-black/70 px-3 py-2 text-right font-semibold leading-snug text-white"
+              style={{ fontSize: `${0.75 * SIZE_FACTOR[settings.size]}rem` }}
+            >
+              <div>{formatStamp(stampNow(settings, now), settings)}</div>
               {lines.map((l) => (
                 <div key={l}>{l}</div>
               ))}
@@ -312,6 +332,136 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           </span>
         </div>
       </div>
+
+      {/* Botão de configurações da câmera */}
+      <button
+        type="button"
+        aria-label="Configurações da câmera"
+        onClick={() => setShowSettings((v) => !v)}
+        className="absolute right-3 top-3 rounded-full bg-slate-900/85 p-2.5 text-white backdrop-blur"
+      >
+        <Settings2 className="h-5 w-5" />
+      </button>
+
+      {showSettings && (
+        <div className="absolute inset-x-3 top-16 max-h-[70dvh] space-y-4 overflow-y-auto rounded-2xl bg-slate-900/95 p-4 text-sm text-white backdrop-blur">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold">Configurações do carimbo</h2>
+            <button type="button" aria-label="Fechar configurações" onClick={() => setShowSettings(false)}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Hora</p>
+            <div className="flex gap-2">
+              {[
+                { l: "24h", v: true },
+                { l: "12h (AM/PM)", v: false },
+              ].map((o) => (
+                <button
+                  key={o.l}
+                  type="button"
+                  onClick={() => update({ clock24h: o.v })}
+                  className={`flex-1 rounded-lg px-3 py-2 font-semibold ${settings.clock24h === o.v ? "bg-yellow-300 text-slate-900" : "bg-slate-800"}`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span>Mostrar segundos</span>
+              <input
+                type="checkbox"
+                checked={settings.showSeconds}
+                onChange={(e) => update({ showSeconds: e.target.checked })}
+                className="h-4 w-4 accent-yellow-300"
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span>Mostrar data</span>
+              <input
+                type="checkbox"
+                checked={settings.showDate}
+                onChange={(e) => update({ showDate: e.target.checked })}
+                className="h-4 w-4 accent-yellow-300"
+              />
+            </label>
+            <label className="flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2">
+              <span>Ajuste de hora (min)</span>
+              <input
+                type="number"
+                value={settings.timeOffsetMin}
+                onChange={(e) => update({ timeOffsetMin: Number(e.target.value) || 0 })}
+                className="w-20 rounded bg-slate-700 px-2 py-1 text-right"
+              />
+            </label>
+            <p className="text-[11px] text-slate-400">
+              Prévia: {formatStamp(stampNow(settings, now), settings)}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Tamanho</p>
+            <div className="flex gap-2">
+              {(["pequeno", "medio", "grande"] as StampSize[]).map((sz) => (
+                <button
+                  key={sz}
+                  type="button"
+                  onClick={() => update({ size: sz })}
+                  className={`flex-1 rounded-lg px-3 py-2 font-semibold capitalize ${settings.size === sz ? "bg-yellow-300 text-slate-900" : "bg-slate-800"}`}
+                >
+                  {sz === "medio" ? "médio" : sz}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Layout</p>
+            <label className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span>Mostrar mini mapa</span>
+              <input
+                type="checkbox"
+                checked={settings.showMap}
+                onChange={(e) => update({ showMap: e.target.checked })}
+                className="h-4 w-4 accent-yellow-300"
+              />
+            </label>
+            <div className="flex gap-2">
+              {(["esquerda", "direita"] as const).map((side) => (
+                <button
+                  key={side}
+                  type="button"
+                  onClick={() => update({ mapSide: side })}
+                  className={`flex-1 rounded-lg px-3 py-2 font-semibold capitalize ${settings.mapSide === side ? "bg-yellow-300 text-slate-900" : "bg-slate-800"}`}
+                >
+                  Mapa à {side}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span>Mostrar endereço</span>
+              <input
+                type="checkbox"
+                checked={settings.showAddress}
+                onChange={(e) => update({ showAddress: e.target.checked })}
+                className="h-4 w-4 accent-yellow-300"
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span>Mostrar coordenadas</span>
+              <input
+                type="checkbox"
+                checked={settings.showCoords}
+                onChange={(e) => update({ showCoords: e.target.checked })}
+                className="h-4 w-4 accent-yellow-300"
+              />
+            </label>
+          </div>
+        </div>
+      )}
+
 
 
       {error && (
