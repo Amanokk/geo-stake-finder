@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Settings2, X } from "lucide-react";
 import { savePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
 import { addPhotoLog } from "@/lib/photoLog";
+import {
+  CameraSettings,
+  DEFAULT_CAMERA_SETTINGS,
+  SIZE_FACTOR,
+  StampSize,
+  formatStamp,
+  loadCameraSettings,
+  saveCameraSettings,
+  stampNow,
+} from "@/lib/cameraSettings";
 
 export type CameraStamp = {
   estaca: string | null;
@@ -10,10 +21,6 @@ export type CameraStamp = {
   lng: number | null;
 };
 
-function formatDate(d: Date) {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
 
 function staticMapUrl(lat: number, lng: number, size = 320) {
   const key = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;
