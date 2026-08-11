@@ -230,7 +230,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       const mx = settings.mapSide === "direita" ? w - mapS : 0;
       const my = h - mapS;
       ctx.save();
-      ctx.globalAlpha = 0.92;
+      ctx.globalAlpha = Math.max(0.2, alpha + 0.2);
       ctx.drawImage(mapImg, mx, my, mapS, mapS);
       ctx.restore();
     }
