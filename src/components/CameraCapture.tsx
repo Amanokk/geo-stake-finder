@@ -27,6 +27,16 @@ function staticMapUrl(lat: number, lng: number, size = 320) {
   return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=${size}x${size}&scale=2&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${key}`;
 }
 
+/** Relógio isolado: só ele re-renderiza a cada tique, mantendo a prévia fluida. */
+const StampClock = memo(function StampClock({ settings }: { settings: CameraSettings }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), settings.showSeconds ? 1000 : 30000);
+    return () => clearInterval(t);
+  }, [settings.showSeconds]);
+  return <>{formatStamp(stampNow(settings, now), settings)}</>;
+});
+
 export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
