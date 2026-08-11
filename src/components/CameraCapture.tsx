@@ -282,16 +282,19 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             playsInline
             muted
             className="h-full w-full object-cover"
+            style={{ transform: "translateZ(0)", backfaceVisibility: "hidden" }}
           />
           {/* Layout rotativo automático: com o celular em pé os carimbos
               aparecem deitados; ao girar para paisagem eles ficam de pé,
               sempre na mesma posição em que saem na foto (horizontal). */}
           <div
-            className="pointer-events-none absolute left-1/2 top-1/2 origin-center transition-transform duration-200"
+            className="pointer-events-none absolute left-1/2 top-1/2 origin-center"
             style={{
               width: landscape ? "100dvw" : "100dvh",
               height: landscape ? "100dvh" : "100dvw",
-              transform: `translate(-50%, -50%) rotate(${landscape ? 0 : 90}deg)`,
+              transform: `translate(-50%, -50%) rotate(${landscape ? 0 : 90}deg) translateZ(0)`,
+              willChange: "transform",
+              contain: "layout paint",
             }}
           >
 
