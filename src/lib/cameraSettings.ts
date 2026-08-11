@@ -6,6 +6,8 @@ export type CameraSettings = {
   showSeconds: boolean;
   showDate: boolean;
   timeOffsetMin: number;
+  timeOffsetSec: number;
+  opacity: number;
   size: StampSize;
   mapSide: StampSide;
   showMap: boolean;
@@ -18,6 +20,8 @@ export const DEFAULT_CAMERA_SETTINGS: CameraSettings = {
   showSeconds: false,
   showDate: true,
   timeOffsetMin: 0,
+  timeOffsetSec: 0,
+  opacity: 0.75,
   size: "medio",
   mapSide: "esquerda",
   showMap: true,
@@ -30,6 +34,7 @@ export const SIZE_FACTOR: Record<StampSize, number> = {
   medio: 1,
   grande: 1.35,
 };
+
 
 const KEY = "estacagps.camera.settings";
 
