@@ -296,8 +296,11 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           >
 
             <div
-              className="absolute left-3 top-3 rounded bg-slate-900/85 px-3 py-1.5 font-black text-yellow-300"
-              style={{ fontSize: `${1.25 * SIZE_FACTOR[settings.size]}rem` }}
+              className="absolute left-3 top-3 rounded px-3 py-1.5 font-black text-yellow-300"
+              style={{
+                fontSize: `${1.25 * SIZE_FACTOR[settings.size]}rem`,
+                backgroundColor: `rgba(15,23,42,${alpha})`,
+              }}
             >
               {stamp.estaca ?? "Sem estaca"}
             </div>
@@ -305,15 +308,24 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               <img
                 src={mapUrl}
                 alt="Mini mapa da localização atual"
-                className={`absolute bottom-0 object-cover opacity-90 ${settings.mapSide === "direita" ? "right-0" : "left-0"}`}
-                style={{ height: `${6 * SIZE_FACTOR[settings.size]}rem`, width: `${6 * SIZE_FACTOR[settings.size]}rem` }}
+                className={`absolute bottom-0 object-cover ${settings.mapSide === "direita" ? "right-0" : "left-0"}`}
+                style={{
+                  height: `${6 * SIZE_FACTOR[settings.size]}rem`,
+                  width: `${6 * SIZE_FACTOR[settings.size]}rem`,
+                  opacity: Math.max(0.2, alpha + 0.2),
+                }}
               />
             )}
             <div
-              className="absolute bottom-0 right-0 bg-black/70 px-3 py-2 text-right font-semibold leading-snug text-white"
-              style={{ fontSize: `${0.75 * SIZE_FACTOR[settings.size]}rem` }}
+              className="absolute bottom-0 right-0 px-3 py-2 text-right font-semibold leading-snug text-white"
+              style={{
+                fontSize: `${0.75 * SIZE_FACTOR[settings.size]}rem`,
+                backgroundColor: `rgba(0,0,0,${alpha})`,
+              }}
             >
-              <div>{formatStamp(stampNow(settings, now), settings)}</div>
+              <div>
+                <StampClock settings={settings} />
+              </div>
               {lines.map((l) => (
                 <div key={l}>{l}</div>
               ))}
