@@ -213,7 +213,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     const boxH2 = stampLines.length * lineH + padY2 * 2;
     const bx = w - boxW;
     const by = h - boxH2;
-    ctx.fillStyle = "rgba(0,0,0,0.72)";
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
     ctx.fillRect(bx, by, boxW, boxH2);
     ctx.fillStyle = "#ffffff";
     ctx.textBaseline = "top";
