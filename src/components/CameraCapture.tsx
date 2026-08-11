@@ -333,6 +333,136 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         </div>
       </div>
 
+      {/* Botão de configurações da câmera */}
+      <button
+        type="button"
+        aria-label="Configurações da câmera"
+        onClick={() => setShowSettings((v) => !v)}
+        className="absolute right-3 top-3 rounded-full bg-slate-900/85 p-2.5 text-white backdrop-blur"
+      >
+        <Settings2 className="h-5 w-5" />
+      </button>
+
+      {showSettings && (
+        <div className="absolute inset-x-3 top-16 max-h-[70dvh] space-y-4 overflow-y-auto rounded-2xl bg-slate-900/95 p-4 text-sm text-white backdrop-blur">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold">Configurações do carimbo</h2>
+            <button type="button" aria-label="Fechar configurações" onClick={() => setShowSettings(false)}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Hora</p>
+            <div className="flex gap-2">
+              {[
+                { l: "24h", v: true },
+                { l: "12h (AM/PM)", v: false },
+              ].map((o) => (
+                <button
+                  key={o.l}
+                  type="button"
+                  onClick={() => update({ clock24h: o.v })}
+                  className={`flex-1 rounded-lg px-3 py-2 font-semibold ${settings.clock24h === o.v ? "bg-yellow-300 text-slate-900" : "bg-slate-800"}`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span>Mostrar segundos</span>
+              <input
+                type="checkbox"
+                checked={settings.showSeconds}
+                onChange={(e) => update({ showSeconds: e.target.checked })}
+                className="h-4 w-4 accent-yellow-300"
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span>Mostrar data</span>
+              <input
+                type="checkbox"
+                checked={settings.showDate}
+                onChange={(e) => update({ showDate: e.target.checked })}
+                className="h-4 w-4 accent-yellow-300"
+              />
+            </label>
+            <label className="flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2">
+              <span>Ajuste de hora (min)</span>
+              <input
+                type="number"
+                value={settings.timeOffsetMin}
+                onChange={(e) => update({ timeOffsetMin: Number(e.target.value) || 0 })}
+                className="w-20 rounded bg-slate-700 px-2 py-1 text-right"
+              />
+            </label>
+            <p className="text-[11px] text-slate-400">
+              Prévia: {formatStamp(stampNow(settings, now), settings)}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Tamanho</p>
+            <div className="flex gap-2">
+              {(["pequeno", "medio", "grande"] as StampSize[]).map((sz) => (
+                <button
+                  key={sz}
+                  type="button"
+                  onClick={() => update({ size: sz })}
+                  className={`flex-1 rounded-lg px-3 py-2 font-semibold capitalize ${settings.size === sz ? "bg-yellow-300 text-slate-900" : "bg-slate-800"}`}
+                >
+                  {sz === "medio" ? "médio" : sz}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Layout</p>
+            <label className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span>Mostrar mini mapa</span>
+              <input
+                type="checkbox"
+                checked={settings.showMap}
+                onChange={(e) => update({ showMap: e.target.checked })}
+                className="h-4 w-4 accent-yellow-300"
+              />
+            </label>
+            <div className="flex gap-2">
+              {(["esquerda", "direita"] as const).map((side) => (
+                <button
+                  key={side}
+                  type="button"
+                  onClick={() => update({ mapSide: side })}
+                  className={`flex-1 rounded-lg px-3 py-2 font-semibold capitalize ${settings.mapSide === side ? "bg-yellow-300 text-slate-900" : "bg-slate-800"}`}
+                >
+                  Mapa à {side}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span>Mostrar endereço</span>
+              <input
+                type="checkbox"
+                checked={settings.showAddress}
+                onChange={(e) => update({ showAddress: e.target.checked })}
+                className="h-4 w-4 accent-yellow-300"
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2">
+              <span>Mostrar coordenadas</span>
+              <input
+                type="checkbox"
+                checked={settings.showCoords}
+                onChange={(e) => update({ showCoords: e.target.checked })}
+                className="h-4 w-4 accent-yellow-300"
+              />
+            </label>
+          </div>
+        </div>
+      )}
+
+
 
       {error && (
         <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 rounded-xl bg-slate-900 p-4 text-center text-sm text-red-300">
