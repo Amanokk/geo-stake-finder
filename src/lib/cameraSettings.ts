@@ -7,6 +7,8 @@ export type CameraSettings = {
   showDate: boolean;
   timeOffsetMin: number;
   timeOffsetSec: number;
+  /** Data fixa no formato YYYY-MM-DD; null = usa a data atual do aparelho. */
+  customDate: string | null;
   opacity: number;
   size: StampSize;
   mapSide: StampSide;
