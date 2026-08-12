@@ -43,6 +43,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const mapImgRef = useRef<HTMLImageElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shot, setShot] = useState<string | null>(null);
+  const [rawShot, setRawShot] = useState<string | null>(null);
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
