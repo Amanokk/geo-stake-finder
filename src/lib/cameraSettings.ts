@@ -23,6 +23,7 @@ export const DEFAULT_CAMERA_SETTINGS: CameraSettings = {
   showDate: true,
   timeOffsetMin: 0,
   timeOffsetSec: 0,
+  customDate: null,
   opacity: 0.75,
   size: "medio",
   mapSide: "esquerda",
