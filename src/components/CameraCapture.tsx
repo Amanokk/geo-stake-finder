@@ -580,6 +580,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             shot
               ? () => {
                   setShot(null);
+                  setRawShot(null);
                   setStatus(null);
                 }
               : onClose
