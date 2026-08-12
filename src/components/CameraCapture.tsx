@@ -269,6 +269,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const save = async () => {
     if (!shot || saving) return;
     setSaving(true);
+    // Sempre duas imagens: a original (sem layout) e a carimbada.
+    const resRaw = rawShot ? await savePhoto(rawShot, `${fileName}-original`) : null;
     const res = await savePhoto(shot, fileName);
     if (res.ok) {
       addPhotoLog({
@@ -280,8 +282,22 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         estaca: stamp.estaca,
       });
     }
+    if (resRaw?.ok) {
+      addPhotoLog({
+        file: `${fileName}-original.jpg`,
+        timestamp: new Date().toISOString(),
+        lat: stamp.lat,
+        lng: stamp.lng,
+        street: stamp.street,
+        estaca: stamp.estaca,
+      });
+    }
     setSaving(false);
-    setStatus(res.message);
+    setStatus(
+      res.ok && resRaw?.ok
+        ? `Salvas 2 imagens: ${fileName}.jpg (com layout) e ${fileName}-original.jpg`
+        : res.message,
+    );
   };
 
 
