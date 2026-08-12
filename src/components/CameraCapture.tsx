@@ -446,6 +446,24 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               />
             </label>
             <label className="flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2">
+              <span>Data do carimbo</span>
+              <input
+                type="date"
+                value={settings.customDate ?? ""}
+                onChange={(e) => update({ customDate: e.target.value || null })}
+                className="rounded bg-slate-700 px-2 py-1"
+              />
+            </label>
+            {settings.customDate && (
+              <button
+                type="button"
+                onClick={() => update({ customDate: null })}
+                className="w-full rounded-lg bg-slate-800 px-3 py-2 text-[12px] font-semibold text-yellow-300"
+              >
+                Usar a data de hoje
+              </button>
+            )}
+            <label className="flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2">
               <span>Ajuste de minutos</span>
               <input
                 type="number"
