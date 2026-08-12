@@ -182,6 +182,19 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     ctx.drawImage(video, 0, 0, vw, vh);
     ctx.restore();
 
+    const dateForRaw = stampNow(settings);
+    // Cópia original (sem nenhum carimbo), salva junto com a versão carimbada.
+    setRawShot(
+      addExif(canvas.toDataURL("image/jpeg", 0.92), {
+        lat: stamp.lat,
+        lng: stamp.lng,
+        estaca: stamp.estaca,
+        street: stamp.street,
+        date: dateForRaw,
+      }),
+    );
+
+
     const s = (w / 1600) * SIZE_FACTOR[settings.size]; // escala de referência
 
     const date = stampNow(settings);
