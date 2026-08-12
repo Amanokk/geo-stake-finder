@@ -7,6 +7,8 @@ export type CameraSettings = {
   showDate: boolean;
   timeOffsetMin: number;
   timeOffsetSec: number;
+  /** Data fixa no formato YYYY-MM-DD; null = usa a data atual do aparelho. */
+  customDate: string | null;
   opacity: number;
   size: StampSize;
   mapSide: StampSide;
@@ -21,6 +23,7 @@ export const DEFAULT_CAMERA_SETTINGS: CameraSettings = {
   showDate: true,
   timeOffsetMin: 0,
   timeOffsetSec: 0,
+  customDate: null,
   opacity: 0.75,
   size: "medio",
   mapSide: "esquerda",
@@ -58,9 +61,16 @@ export function saveCameraSettings(s: CameraSettings) {
 }
 
 export function stampNow(settings: CameraSettings, base = new Date()) {
-  return new Date(
+  const d = new Date(
     base.getTime() + settings.timeOffsetMin * 60000 + (settings.timeOffsetSec || 0) * 1000,
   );
+  if (settings.customDate) {
+    const [y, m, day] = settings.customDate.split("-").map(Number);
+    if (y && m && day) {
+      d.setFullYear(y, m - 1, day);
+    }
+  }
+  return d;
 }
 
 export function formatStamp(d: Date, s: CameraSettings) {

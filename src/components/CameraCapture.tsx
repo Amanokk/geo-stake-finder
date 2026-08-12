@@ -43,6 +43,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const mapImgRef = useRef<HTMLImageElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shot, setShot] = useState<string | null>(null);
+  const [rawShot, setRawShot] = useState<string | null>(null);
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -182,6 +183,19 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     ctx.drawImage(video, 0, 0, vw, vh);
     ctx.restore();
 
+    const dateForRaw = stampNow(settings);
+    // Cópia original (sem nenhum carimbo), salva junto com a versão carimbada.
+    setRawShot(
+      addExif(canvas.toDataURL("image/jpeg", 0.92), {
+        lat: stamp.lat,
+        lng: stamp.lng,
+        estaca: stamp.estaca,
+        street: stamp.street,
+        date: dateForRaw,
+      }),
+    );
+
+
     const s = (w / 1600) * SIZE_FACTOR[settings.size]; // escala de referência
 
     const date = stampNow(settings);
@@ -255,6 +269,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const save = async () => {
     if (!shot || saving) return;
     setSaving(true);
+    // Sempre duas imagens: a original (sem layout) e a carimbada.
+    const resRaw = rawShot ? await savePhoto(rawShot, `${fileName}-original`) : null;
     const res = await savePhoto(shot, fileName);
     if (res.ok) {
       addPhotoLog({
@@ -266,8 +282,22 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         estaca: stamp.estaca,
       });
     }
+    if (resRaw?.ok) {
+      addPhotoLog({
+        file: `${fileName}-original.jpg`,
+        timestamp: new Date().toISOString(),
+        lat: stamp.lat,
+        lng: stamp.lng,
+        street: stamp.street,
+        estaca: stamp.estaca,
+      });
+    }
     setSaving(false);
-    setStatus(res.message);
+    setStatus(
+      res.ok && resRaw?.ok
+        ? `Salvas 2 imagens: ${fileName}.jpg (com layout) e ${fileName}-original.jpg`
+        : res.message,
+    );
   };
 
 
@@ -416,6 +446,24 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               />
             </label>
             <label className="flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2">
+              <span>Data do carimbo</span>
+              <input
+                type="date"
+                value={settings.customDate ?? ""}
+                onChange={(e) => update({ customDate: e.target.value || null })}
+                className="rounded bg-slate-700 px-2 py-1"
+              />
+            </label>
+            {settings.customDate && (
+              <button
+                type="button"
+                onClick={() => update({ customDate: null })}
+                className="w-full rounded-lg bg-slate-800 px-3 py-2 text-[12px] font-semibold text-yellow-300"
+              >
+                Usar a data de hoje
+              </button>
+            )}
+            <label className="flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2">
               <span>Ajuste de minutos</span>
               <input
                 type="number"
@@ -550,6 +598,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             shot
               ? () => {
                   setShot(null);
+                  setRawShot(null);
                   setStatus(null);
                 }
               : onClose
