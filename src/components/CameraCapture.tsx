@@ -46,7 +46,11 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const [rawShot, setRawShot] = useState<string | null>(null);
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [saved, setSaved] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+
   const [settings, setSettings] = useState<CameraSettings>(DEFAULT_CAMERA_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
   useEffect(() => setSettings(loadCameraSettings()), []);
