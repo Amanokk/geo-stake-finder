@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Settings2, X } from "lucide-react";
-import { savePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
+import { savePhoto, sharePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
 import { addPhotoLog } from "@/lib/photoLog";
 import {
