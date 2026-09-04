@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings2, X } from "lucide-react";
-import { savePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
+import { Settings2, Share2, X } from "lucide-react";
+import { savePhoto, sharePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
 import { addPhotoLog } from "@/lib/photoLog";
 import {
@@ -46,7 +46,11 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const [rawShot, setRawShot] = useState<string | null>(null);
   const [fileName, setFileName] = useState("foto");
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [saved, setSaved] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+
   const [settings, setSettings] = useState<CameraSettings>(DEFAULT_CAMERA_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
   useEffect(() => setSettings(loadCameraSettings()), []);
@@ -266,8 +270,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   }, [alpha, angle, coords, lines, settings, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
 
 
-  const save = async () => {
-    if (!shot || saving) return;
+  const save = useCallback(async () => {
+    if (!shot || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     // Sempre duas imagens: a original (sem layout) e a carimbada.
     const resRaw = rawShot ? await savePhoto(rawShot, `${fileName}-original`) : null;
@@ -292,13 +297,32 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         estaca: stamp.estaca,
       });
     }
+    savingRef.current = false;
     setSaving(false);
+    setSaved(res.ok);
     setStatus(
       res.ok && resRaw?.ok
         ? `Salvas 2 imagens: ${fileName}.jpg (com layout) e ${fileName}-original.jpg`
         : res.message,
     );
+  }, [fileName, rawShot, shot, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
+
+  // Salvamento automático na galeria assim que a foto é tirada.
+  useEffect(() => {
+    if (shot && !saved && !savingRef.current) void save();
+  }, [save, saved, shot]);
+
+  const sendWhatsApp = async () => {
+    if (!shot || sharing) return;
+    setSharing(true);
+    const legenda = [stamp.estaca ? `Estaca ${stamp.estaca}` : null, stamp.street, formatStamp(stampNow(settings), settings)]
+      .filter(Boolean)
+      .join(" · ");
+    const res = await sharePhoto(shot, fileName, legenda);
+    setSharing(false);
+    setStatus(res.message);
   };
+
 
 
   return (
@@ -599,6 +623,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               ? () => {
                   setShot(null);
                   setRawShot(null);
+                  setSaved(false);
                   setStatus(null);
                 }
               : onClose
@@ -610,11 +635,13 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         {shot ? (
           <button
             type="button"
-            onClick={save}
-            disabled={saving}
-            className="rounded-full bg-yellow-300 px-6 py-2 text-sm font-bold text-slate-900 disabled:opacity-60"
+            onClick={sendWhatsApp}
+            disabled={sharing}
+            aria-label="Enviar para o WhatsApp"
+            className="flex items-center gap-2 rounded-full bg-green-500 px-5 py-2 text-sm font-bold text-white disabled:opacity-60"
           >
-            {saving ? "Salvando…" : "Salvar na galeria"}
+            <Share2 className="h-4 w-4" />
+            {sharing ? "Enviando…" : "WhatsApp"}
           </button>
         ) : (
           <button
