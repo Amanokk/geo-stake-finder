@@ -220,7 +220,15 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       ctx.fillStyle = "#facc15";
       ctx.textBaseline = "top";
       ctx.fillText(text, 24 * s + padX, 24 * s + padY);
+      boxRef.current = {
+        x: Math.round(24 * s),
+        y: Math.round(24 * s),
+        w: Math.round(tw + padX * 2),
+        h: boxH,
+        fontSize: Math.round(56 * s),
+      };
     }
+    stampDateRef.current = date;
 
     // Bloco de data/endereço (canto inferior direito)
     const stampLines = [formatStamp(date, settings), ...lines, ...(coords ? [coords] : [])];
