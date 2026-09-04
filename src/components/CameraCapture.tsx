@@ -51,6 +51,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const [saved, setSaved] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const boxRef = useRef<{ x: number; y: number; w: number; h: number; fontSize: number } | null>(null);
+  const stampDateRef = useRef<Date>(new Date());
 
   const [settings, setSettings] = useState<CameraSettings>(DEFAULT_CAMERA_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
