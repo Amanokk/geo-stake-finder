@@ -311,7 +311,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             ref={videoRef}
             playsInline
             muted
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
             style={{ transform: "translateZ(0)", backfaceVisibility: "hidden" }}
           />
           {/* Layout rotativo automático: com o celular em pé os carimbos
