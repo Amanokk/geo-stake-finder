@@ -266,8 +266,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   }, [alpha, angle, coords, lines, settings, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
 
 
-  const save = async () => {
-    if (!shot || saving) return;
+  const save = useCallback(async () => {
+    if (!shot || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     // Sempre duas imagens: a original (sem layout) e a carimbada.
     const resRaw = rawShot ? await savePhoto(rawShot, `${fileName}-original`) : null;
@@ -292,13 +293,32 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         estaca: stamp.estaca,
       });
     }
+    savingRef.current = false;
     setSaving(false);
+    setSaved(res.ok);
     setStatus(
       res.ok && resRaw?.ok
         ? `Salvas 2 imagens: ${fileName}.jpg (com layout) e ${fileName}-original.jpg`
         : res.message,
     );
+  }, [fileName, rawShot, shot, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
+
+  // Salvamento automático na galeria assim que a foto é tirada.
+  useEffect(() => {
+    if (shot && !saved && !savingRef.current) void save();
+  }, [save, saved, shot]);
+
+  const sendWhatsApp = async () => {
+    if (!shot || sharing) return;
+    setSharing(true);
+    const legenda = [stamp.estaca ? `Estaca ${stamp.estaca}` : null, stamp.street, formatStamp(stampNow(settings), settings)]
+      .filter(Boolean)
+      .join(" · ");
+    const res = await sharePhoto(shot, fileName, legenda);
+    setSharing(false);
+    setStatus(res.message);
   };
+
 
 
   return (
