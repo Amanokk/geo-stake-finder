@@ -3,6 +3,7 @@ import { Settings2, Share2, X } from "lucide-react";
 import { savePhoto, sharePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
 import { addPhotoLog } from "@/lib/photoLog";
+import { putPhoto } from "@/lib/photoStore";
 import {
   CameraSettings,
   DEFAULT_CAMERA_SETTINGS,
@@ -50,6 +51,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const [saved, setSaved] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const boxRef = useRef<{ x: number; y: number; w: number; h: number; fontSize: number } | null>(null);
+  const stampDateRef = useRef<Date>(new Date());
 
   const [settings, setSettings] = useState<CameraSettings>(DEFAULT_CAMERA_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
@@ -217,7 +220,15 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       ctx.fillStyle = "#facc15";
       ctx.textBaseline = "top";
       ctx.fillText(text, 24 * s + padX, 24 * s + padY);
+      boxRef.current = {
+        x: Math.round(24 * s),
+        y: Math.round(24 * s),
+        w: Math.round(tw + padX * 2),
+        h: boxH,
+        fontSize: Math.round(56 * s),
+      };
     }
+    stampDateRef.current = date;
 
     // Bloco de data/endereço (canto inferior direito)
     const stampLines = [formatStamp(date, settings), ...lines, ...(coords ? [coords] : [])];
@@ -263,9 +274,12 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       }),
     );
 
+    // Nome único por foto: data do carimbo + hora real (com segundos e milissegundos),
+    // assim cada captura vira um arquivo novo e o navegador não pergunta de novo.
     const p = (n: number) => String(n).padStart(2, "0");
+    const real = new Date();
     setFileName(
-      `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
+      `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(real.getHours())}${p(real.getMinutes())}${p(real.getSeconds())}-${String(real.getMilliseconds()).padStart(3, "0")}`,
     );
   }, [alpha, angle, coords, lines, settings, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
 
