@@ -3,6 +3,7 @@ import { Settings2, Share2, X } from "lucide-react";
 import { savePhoto, sharePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
 import { addPhotoLog } from "@/lib/photoLog";
+import { putPhoto } from "@/lib/photoStore";
 import {
   CameraSettings,
   DEFAULT_CAMERA_SETTINGS,
