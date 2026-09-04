@@ -274,9 +274,12 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       }),
     );
 
+    // Nome único por foto: data do carimbo + hora real (com segundos e milissegundos),
+    // assim cada captura vira um arquivo novo e o navegador não pergunta de novo.
     const p = (n: number) => String(n).padStart(2, "0");
+    const real = new Date();
     setFileName(
-      `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(date.getHours())}${p(date.getMinutes())}`,
+      `${stamp.estaca ?? "foto"}-${p(date.getDate())}${p(date.getMonth() + 1)}${date.getFullYear()}-${p(real.getHours())}${p(real.getMinutes())}${p(real.getSeconds())}-${String(real.getMilliseconds()).padStart(3, "0")}`,
     );
   }, [alpha, angle, coords, lines, settings, stamp.estaca, stamp.lat, stamp.lng, stamp.street]);
 
