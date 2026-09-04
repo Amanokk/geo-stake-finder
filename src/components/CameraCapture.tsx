@@ -623,6 +623,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               ? () => {
                   setShot(null);
                   setRawShot(null);
+                  setSaved(false);
                   setStatus(null);
                 }
               : onClose
@@ -634,11 +635,13 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         {shot ? (
           <button
             type="button"
-            onClick={save}
-            disabled={saving}
-            className="rounded-full bg-yellow-300 px-6 py-2 text-sm font-bold text-slate-900 disabled:opacity-60"
+            onClick={sendWhatsApp}
+            disabled={sharing}
+            aria-label="Enviar para o WhatsApp"
+            className="flex items-center gap-2 rounded-full bg-green-500 px-5 py-2 text-sm font-bold text-white disabled:opacity-60"
           >
-            {saving ? "Salvando…" : "Salvar na galeria"}
+            <Share2 className="h-4 w-4" />
+            {sharing ? "Enviando…" : "WhatsApp"}
           </button>
         ) : (
           <button
