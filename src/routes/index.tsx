@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, FileDown } from "lucide-react";
+import { Camera, FileDown, LocateFixed } from "lucide-react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { Splash } from "@/components/Splash";
 import { CameraCapture } from "@/components/CameraCapture";
@@ -367,18 +367,18 @@ function Index() {
             Carregando mapa…
           </div>
         )}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 p-3">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <div className="pointer-events-auto rounded-full bg-slate-900/80 px-3 py-1.5 text-xs text-slate-200 backdrop-blur">
             {exportMsg ? exportMsg : null}
             {exportMsg ? " · " : null}
             GPS ±{geo.accuracy ? geo.accuracy.toFixed(0) : "--"} m
           </div>
-          <div className="pointer-events-auto flex items-center gap-2">
+          <div className="pointer-events-auto mb-10 flex flex-col items-center gap-2">
             <button
               type="button"
               onClick={() => setCameraOpen(true)}
               aria-label="Abrir câmera com carimbo de estaca"
-              className="grid h-10 w-10 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
+              className="grid h-11 w-11 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
             >
               <Camera size={18} />
             </button>
@@ -390,19 +390,21 @@ function Index() {
                 setTimeout(() => setExportMsg(null), 3000);
               }}
               aria-label="Exportar CSV das fotos salvas"
-              className="grid h-10 w-10 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
+              className="grid h-11 w-11 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
             >
               <FileDown size={18} />
             </button>
             <button
               type="button"
               onClick={recenter}
-              className="rounded-full bg-yellow-300 px-4 py-1.5 text-xs font-bold text-slate-900"
+              aria-label="Centralizar no GPS"
+              className="grid h-11 w-11 place-items-center rounded-full bg-yellow-300 text-slate-900"
             >
-              Centralizar
+              <LocateFixed size={18} />
             </button>
           </div>
         </div>
+
       </div>
 
       {cameraOpen && (
