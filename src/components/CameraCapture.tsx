@@ -311,6 +311,20 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         estaca: stamp.estaca,
       });
     }
+    // Guarda a foto na tela de Fotos do app (com mapa, dados e retoque da estaca).
+    await putPhoto({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      file: `${fileName}.jpg`,
+      timestamp: new Date().toISOString(),
+      stampDate: stampDateRef.current.toISOString(),
+      lat: stamp.lat,
+      lng: stamp.lng,
+      street: stamp.street,
+      estaca: stamp.estaca,
+      stamped: shot,
+      raw: rawShot,
+      box: boxRef.current,
+    });
     savingRef.current = false;
     setSaving(false);
     setSaved(res.ok);
