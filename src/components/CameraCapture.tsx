@@ -139,6 +139,12 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
   }, [attachStream]);
 
+  // Ao voltar da foto tirada, garante que a prévia volte a rodar.
+  useEffect(() => {
+    if (!shot) attachStream();
+  }, [shot, attachStream]);
+
+
 
   const lines = useMemo(
     () =>
