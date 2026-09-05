@@ -86,6 +86,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
   }, []);
 
+  // Giro do carimbo na prévia, acompanhando a orientação real da tela.
+  const layoutRotation = landscape ? (angle === 180 ? 180 : 0) : angle === 180 ? -90 : 90;
+
 
 
   // Miniatura do mapa carregada com CORS para poder ser desenhada no canvas.
