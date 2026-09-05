@@ -374,6 +374,13 @@ function Index() {
             GPS ±{geo.accuracy ? geo.accuracy.toFixed(0) : "--"} m
           </div>
           <div className="pointer-events-auto mb-10 flex flex-col items-center gap-2">
+            <Link
+              to="/fotos"
+              aria-label="Ver fotos capturadas"
+              className="grid h-11 w-11 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
+            >
+              <Images size={18} />
+            </Link>
             <button
               type="button"
               onClick={() => setCameraOpen(true)}
