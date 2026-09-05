@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, FileDown, LocateFixed } from "lucide-react";
+import { Camera, FileDown, Images, LocateFixed } from "lucide-react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { Splash } from "@/components/Splash";
 import { CameraCapture } from "@/components/CameraCapture";
