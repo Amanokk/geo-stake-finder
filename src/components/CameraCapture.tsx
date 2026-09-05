@@ -103,6 +103,14 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   }, [mapUrl]);
 
 
+  const attachStream = useCallback(() => {
+    const v = videoRef.current;
+    const s = streamRef.current;
+    if (!v || !s) return;
+    if (v.srcObject !== s) v.srcObject = s;
+    if (v.paused) void v.play().catch(() => undefined);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -116,10 +124,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => undefined);
-        }
+        attachStream();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Não foi possível abrir a câmera.");
       }
@@ -129,7 +134,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
-  }, []);
+  }, [attachStream]);
+
 
   const lines = useMemo(
     () =>
