@@ -86,6 +86,9 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
   }, []);
 
+  // Giro do carimbo na prévia, acompanhando a orientação real da tela.
+  const layoutRotation = landscape ? (angle === 180 ? 180 : 0) : angle === 180 ? -90 : 90;
+
 
 
   // Miniatura do mapa carregada com CORS para poder ser desenhada no canvas.
@@ -103,6 +106,14 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   }, [mapUrl]);
 
 
+  const attachStream = useCallback(() => {
+    const v = videoRef.current;
+    const s = streamRef.current;
+    if (!v || !s) return;
+    if (v.srcObject !== s) v.srcObject = s;
+    if (v.paused) void v.play().catch(() => undefined);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -116,10 +127,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => undefined);
-        }
+        attachStream();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Não foi possível abrir a câmera.");
       }
@@ -129,7 +137,14 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
-  }, []);
+  }, [attachStream]);
+
+  // Ao voltar da foto tirada, garante que a prévia volte a rodar.
+  useEffect(() => {
+    if (!shot) attachStream();
+  }, [shot, attachStream]);
+
+
 
   const lines = useMemo(
     () =>
@@ -355,26 +370,36 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
+      {/* O vídeo nunca é desmontado: ao repetir a foto a prévia volta na hora
+          (antes a tela ficava preta porque o elemento era recriado sem o stream). */}
+      <video
+        ref={videoRef}
+        playsInline
+        muted
+        autoPlay
+        className="h-full w-full object-contain"
+        style={{
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden",
+          visibility: shot ? "hidden" : "visible",
+        }}
+      />
       {shot ? (
-        <img src={shot} alt="Foto capturada com carimbo de estaca e data" className="h-full w-full object-contain" />
+        <img
+          src={shot}
+          alt="Foto capturada com carimbo de estaca e data"
+          className="absolute inset-0 h-full w-full object-contain"
+        />
       ) : (
         <>
-          <video
-            ref={videoRef}
-            playsInline
-            muted
-            className="h-full w-full object-contain"
-            style={{ transform: "translateZ(0)", backfaceVisibility: "hidden" }}
-          />
-          {/* Layout rotativo automático: com o celular em pé os carimbos
-              aparecem deitados; ao girar para paisagem eles ficam de pé,
-              sempre na mesma posição em que saem na foto (horizontal). */}
+          {/* Layout rotativo automático: acompanha a orientação da tela em
+              todos os ângulos (retrato, retrato invertido e paisagem). */}
           <div
             className="pointer-events-none absolute left-1/2 top-1/2 origin-center"
             style={{
               width: landscape ? "100dvw" : "100dvh",
               height: landscape ? "100dvh" : "100dvw",
-              transform: `translate(-50%, -50%) rotate(${landscape ? 0 : 90}deg) translateZ(0)`,
+              transform: `translate(-50%, -50%) rotate(${layoutRotation}deg) translateZ(0)`,
               willChange: "transform",
               contain: "layout paint",
             }}
@@ -428,6 +453,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         </>
 
       )}
+
 
       {/* Área fixa (sempre de pé) mostrando a estaca que será carimbada na foto */}
       <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3">
