@@ -404,11 +404,11 @@ function Index() {
             GPS ±{geo.accuracy ? geo.accuracy.toFixed(0) : "--"} m
           </div>
 
-          <div className="pointer-events-auto mb-10 flex flex-col items-center gap-2">
+          <div className="pointer-events-auto mb-10 flex flex-col items-center gap-2 rounded-full border border-white/10 bg-slate-950/60 p-1.5 backdrop-blur">
             <Link
               to="/fotos"
               aria-label="Ver fotos capturadas"
-              className="grid h-11 w-11 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
+              className="grid h-11 w-11 place-items-center rounded-full bg-white/5 text-yellow-300 transition active:scale-95"
             >
               <Images size={18} />
             </Link>
@@ -416,7 +416,7 @@ function Index() {
               type="button"
               onClick={() => setCameraOpen(true)}
               aria-label="Abrir câmera com carimbo de estaca"
-              className="grid h-11 w-11 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
+              className="grid h-11 w-11 place-items-center rounded-full bg-white/5 text-yellow-300 transition active:scale-95"
             >
               <Camera size={18} />
             </button>
@@ -428,7 +428,7 @@ function Index() {
                 setTimeout(() => setExportMsg(null), 3000);
               }}
               aria-label="Exportar CSV das fotos salvas"
-              className="grid h-11 w-11 place-items-center rounded-full bg-slate-900/80 text-yellow-300 backdrop-blur"
+              className="grid h-11 w-11 place-items-center rounded-full bg-white/5 text-yellow-300 transition active:scale-95"
             >
               <FileDown size={18} />
             </button>
@@ -436,11 +436,12 @@ function Index() {
               type="button"
               onClick={recenter}
               aria-label="Centralizar no GPS"
-              className="grid h-11 w-11 place-items-center rounded-full bg-yellow-300 text-slate-900"
+              className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-b from-yellow-200 to-amber-400 text-slate-950 shadow-lg shadow-amber-500/30 transition active:scale-95"
             >
               <LocateFixed size={18} />
             </button>
           </div>
+
         </div>
 
       </div>
