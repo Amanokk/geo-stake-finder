@@ -718,7 +718,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         )}
         <div className="w-16" />
       </div>
-
+      </div>
     </div>
+
   );
 }
