@@ -406,7 +406,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           >
 
             <div
-              className="absolute left-3 top-3 rounded px-3 py-1.5 font-black text-yellow-300"
+              className="absolute left-3 top-3 rounded-xl px-3 py-1.5 font-black text-yellow-300 shadow-lg ring-1 ring-yellow-300/30"
               style={{
                 fontSize: `${1.25 * SIZE_FACTOR[settings.size]}rem`,
                 backgroundColor: `rgba(15,23,42,${alpha})`,
@@ -418,7 +418,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               <img
                 src={mapUrl}
                 alt="Mini mapa da localização atual"
-                className={`absolute bottom-0 object-cover ${settings.mapSide === "direita" ? "right-0" : "left-0"}`}
+                className={`absolute bottom-3 rounded-xl object-cover ring-1 ring-white/25 ${settings.mapSide === "direita" ? "right-3" : "left-3"}`}
                 style={{
                   height: `${6 * SIZE_FACTOR[settings.size]}rem`,
                   width: `${6 * SIZE_FACTOR[settings.size]}rem`,
@@ -427,20 +427,21 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               />
             )}
             <div
-              className="absolute bottom-0 right-0 px-3 py-2 text-right font-semibold leading-snug text-white"
+              className="absolute bottom-3 right-3 rounded-xl px-3 py-2 text-right font-semibold leading-snug text-white ring-1 ring-white/15"
               style={{
                 fontSize: `${0.75 * SIZE_FACTOR[settings.size]}rem`,
                 backgroundColor: `rgba(0,0,0,${alpha})`,
               }}
             >
-              <div>
+              <div className="text-yellow-200">
                 <StampClock settings={settings} />
               </div>
               {lines.map((l) => (
                 <div key={l}>{l}</div>
               ))}
-              {coords && <div>{coords}</div>}
+              {coords && <div className="text-white/80">{coords}</div>}
             </div>
+
             {!landscape && (
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[11px] font-semibold text-white/60">
                 Vire o celular de lado
