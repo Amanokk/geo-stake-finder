@@ -280,19 +280,12 @@ function Index() {
       highlightRef.current.setPath(match.street.path);
       highlightRef.current.setMap(map);
     }
+    const balloon = balloonIcon(maps, `E-${match.estaca}`);
     if (!stakeMarkerRef.current) {
       stakeMarkerRef.current = new maps.Marker({
         position: match.snapped,
         map,
         clickable: false,
-        icon: {
-          path: maps.SymbolPath.CIRCLE,
-          scale: 14,
-          fillColor: "#facc15",
-          fillOpacity: 1,
-          strokeColor: "#0f172a",
-          strokeWeight: 2,
-        },
         zIndex: 900,
       });
     }
@@ -300,9 +293,11 @@ function Index() {
       position: match.snapped,
       map,
       visible: true,
-      label: { text: `E-${match.estaca}`, color: "#0f172a", fontWeight: "800", fontSize: "12px" },
+      label: null,
+      icon: balloon,
     });
   }, [match]);
+
 
   const recenter = () => {
     followRef.current = true;
