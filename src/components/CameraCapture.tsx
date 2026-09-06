@@ -455,10 +455,20 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
       )}
 
-
-      {/* Área fixa (sempre de pé) mostrando a estaca que será carimbada na foto */}
+      {/* Todos os controles giram junto com a orientação do celular. */}
+      <div
+        className="absolute left-1/2 top-1/2 origin-center"
+        style={{
+          width: landscape ? "100dvw" : "100dvh",
+          height: landscape ? "100dvh" : "100dvw",
+          transform: `translate(-50%, -50%) rotate(${layoutRotation}deg) translateZ(0)`,
+          willChange: "transform",
+        }}
+      >
+      {/* Estaca que será carimbada na foto */}
       <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3">
-        <div className="flex items-center gap-2 rounded-full bg-slate-900/85 px-4 py-2">
+        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 shadow-lg">
+
           <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">
             Estaca na foto
           </span>
