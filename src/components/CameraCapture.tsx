@@ -106,28 +106,51 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   }, [mapUrl]);
 
 
-  const attachStream = useCallback(() => {
-    const v = videoRef.current;
-    const s = streamRef.current;
-    if (!v || !s) return;
-    if (v.srcObject !== s) v.srcObject = s;
-    if (v.paused) void v.play().catch(() => undefined);
+  const openStream = useCallback(async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } },
+      audio: false,
+    });
+    streamRef.current = stream;
+    return stream;
   }, []);
+
+  // Reanexa o stream ao <video> com força total: alguns celulares congelam a
+  // prévia quando o elemento fica invisível, então reatribuímos o srcObject
+  // e chamamos play() de novo. Se a trilha morreu, reabrimos a câmera.
+  const attachStream = useCallback(async () => {
+    const v = videoRef.current;
+    if (!v) return;
+    let s = streamRef.current;
+    if (!s || !s.getVideoTracks().some((t) => t.readyState === "live")) {
+      try {
+        s = await openStream();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Não foi possível abrir a câmera.");
+        return;
+      }
+    }
+    v.srcObject = null;
+    v.srcObject = s;
+    v.muted = true;
+    try {
+      await v.play();
+    } catch {
+      // Segunda tentativa logo em seguida cobre o caso de autoplay negado.
+      setTimeout(() => void v.play().catch(() => undefined), 150);
+    }
+  }, [openStream]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } },
-          audio: false,
-        });
+        const stream = await openStream();
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
-        streamRef.current = stream;
-        attachStream();
+        await attachStream();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Não foi possível abrir a câmera.");
       }
@@ -137,11 +160,11 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
-  }, [attachStream]);
+  }, [attachStream, openStream]);
 
-  // Ao voltar da foto tirada, garante que a prévia volte a rodar.
+  // Ao voltar da foto tirada (Repetir), garante que a prévia volte a rodar.
   useEffect(() => {
-    if (!shot) attachStream();
+    if (!shot) void attachStream();
   }, [shot, attachStream]);
 
 
