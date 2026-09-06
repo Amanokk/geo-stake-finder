@@ -334,57 +334,63 @@ function Index() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
+    <div className="flex min-h-screen flex-col bg-[radial-gradient(120%_80%_at_50%_0%,#132033_0%,#020617_60%)] text-slate-50">
       <Splash />
-      <header className="px-4 pt-5 pb-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-            Retiro São Joaquim · Itaboraí/RJ
-          </div>
-          <div className="flex items-center gap-2">
-            {!online && (
-              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300">
-                Offline
-              </span>
-            )}
-            <div className="text-[11px] font-semibold text-yellow-300/90">By Vitor Lucas</div>
-          </div>
-        </div>
-        {match ? (
-          <>
-            <h1 className="mt-2 text-3xl font-black leading-tight text-white">{match.street.name}</h1>
-            <div className="mt-3 flex items-end gap-3">
-              <div className="text-6xl font-black tabular-nums text-yellow-300 leading-none">
-                E-{match.estaca}
-              </div>
-              <div className="pb-1 text-sm text-slate-300 tabular-nums">
-                {match.offset >= 0 ? "+" : ""}
-                {match.offset.toFixed(1)} m
-                <div className="text-xs text-slate-500">{match.distance.toFixed(1)} m do eixo</div>
+      <header className="px-3 pt-4 pb-3">
+        <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-4 shadow-[0_18px_50px_-24px_rgba(250,204,21,0.55)] backdrop-blur">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[10px] uppercase tracking-[0.25em] text-slate-400">
+              Retiro São Joaquim · Itaboraí/RJ
+            </div>
+            <div className="flex items-center gap-2">
+              {!online && (
+                <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300 ring-1 ring-amber-300/30">
+                  Offline
+                </span>
+              )}
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-yellow-300/80">
+                By Vitor Lucas
               </div>
             </div>
-          </>
-        ) : geo.error ? (
-          <>
-            <h1 className="mt-2 text-2xl font-bold text-red-400">Sem GPS</h1>
-            <p className="text-sm text-slate-400">{geo.error}</p>
-          </>
-        ) : !geo.position ? (
-          <>
-            <h1 className="mt-2 text-2xl font-bold text-slate-300">Obtendo GPS…</h1>
-            <p className="text-sm text-slate-500">Permita o acesso à localização para começar.</p>
-          </>
-        ) : (
-          <>
-            <h1 className="mt-2 text-2xl font-bold text-slate-300">Fora do projeto</h1>
-            <p className="text-sm text-slate-500">
-              Nenhuma rua do bairro a menos de 60 m da sua posição.
-            </p>
-          </>
-        )}
+          </div>
+          {match ? (
+            <>
+              <h1 className="mt-3 text-2xl font-black leading-tight text-white">
+                {match.street.name}
+              </h1>
+              <div className="mt-3 flex items-end gap-3">
+                <div className="rounded-2xl bg-gradient-to-b from-yellow-200 to-amber-400 px-4 py-2 text-4xl font-black tabular-nums leading-none text-slate-950 shadow-lg shadow-amber-500/20">
+                  E-{match.estaca}
+                </div>
+                <div className="pb-1 text-sm tabular-nums text-slate-300">
+                  {match.offset >= 0 ? "+" : ""}
+                  {match.offset.toFixed(1)} m
+                  <div className="text-xs text-slate-500">{match.distance.toFixed(1)} m do eixo</div>
+                </div>
+              </div>
+            </>
+          ) : geo.error ? (
+            <>
+              <h1 className="mt-3 text-2xl font-bold text-red-400">Sem GPS</h1>
+              <p className="text-sm text-slate-400">{geo.error}</p>
+            </>
+          ) : !geo.position ? (
+            <>
+              <h1 className="mt-3 text-2xl font-bold text-slate-300">Obtendo GPS…</h1>
+              <p className="text-sm text-slate-500">Permita o acesso à localização para começar.</p>
+            </>
+          ) : (
+            <>
+              <h1 className="mt-3 text-2xl font-bold text-slate-300">Fora do projeto</h1>
+              <p className="text-sm text-slate-500">
+                Nenhuma rua do bairro a menos de 60 m da sua posição.
+              </p>
+            </>
+          )}
+        </div>
       </header>
 
-      <div className="relative flex-1 min-h-[380px]">
+      <div className="relative mx-3 mb-3 flex-1 min-h-[380px] overflow-hidden rounded-3xl border border-white/10 shadow-2xl shadow-black/50">
         <div ref={mapDivRef} className="absolute inset-0" />
         {!mapsReady && (
           <div className="absolute inset-0 grid place-items-center bg-slate-900 text-slate-400 text-sm">
@@ -392,11 +398,12 @@ function Index() {
           </div>
         )}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <div className="pointer-events-auto rounded-full bg-slate-900/80 px-3 py-1.5 text-xs text-slate-200 backdrop-blur">
+          <div className="pointer-events-auto rounded-full border border-white/10 bg-slate-950/70 px-3 py-1.5 text-xs font-medium text-slate-200 backdrop-blur">
             {exportMsg ? exportMsg : null}
             {exportMsg ? " · " : null}
             GPS ±{geo.accuracy ? geo.accuracy.toFixed(0) : "--"} m
           </div>
+
           <div className="pointer-events-auto mb-10 flex flex-col items-center gap-2">
             <Link
               to="/fotos"
