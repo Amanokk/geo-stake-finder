@@ -86,6 +86,35 @@ function quantize(p: LatLng): string {
   return `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 }
 
+/** Balão de estaca desenhado em SVG (mais bonito que o círculo padrão). */
+function balloonIcon(maps: unknown, text: string) {
+  const w = Math.max(64, 26 + text.length * 12);
+  const h = 54;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <path d="M12 2 h${w - 24} a10 10 0 0 1 10 10 v16 a10 10 0 0 1 -10 10 h-${(w - 24) / 2 - 8} l-8 10 l-8 -10 h-${(w - 24) / 2 - 8} a10 10 0 0 1 -10 -10 v-16 a10 10 0 0 1 10 -10 z"
+      fill="url(#g)" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round"/>
+    <text x="${w / 2}" y="27" text-anchor="middle" dominant-baseline="middle"
+      font-family="system-ui, -apple-system, sans-serif" font-size="17" font-weight="800" fill="#0f172a">${text}</text>
+  </g>
+</svg>`;
+  const api = maps as {
+    Size: new (w: number, h: number) => unknown;
+    Point: new (x: number, y: number) => unknown;
+  };
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new api.Size(w, h),
+    anchor: new api.Point(w / 2, h),
+  };
+}
+
+
 function Index() {
   const mapsReady = useGoogleMaps();
   const geo = useGeolocation(true);
