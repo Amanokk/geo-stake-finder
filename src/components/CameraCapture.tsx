@@ -406,7 +406,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           >
 
             <div
-              className="absolute left-3 top-3 rounded px-3 py-1.5 font-black text-yellow-300"
+              className="absolute left-3 top-3 rounded-xl px-3 py-1.5 font-black text-yellow-300 shadow-lg ring-1 ring-yellow-300/30"
               style={{
                 fontSize: `${1.25 * SIZE_FACTOR[settings.size]}rem`,
                 backgroundColor: `rgba(15,23,42,${alpha})`,
@@ -418,7 +418,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               <img
                 src={mapUrl}
                 alt="Mini mapa da localização atual"
-                className={`absolute bottom-0 object-cover ${settings.mapSide === "direita" ? "right-0" : "left-0"}`}
+                className={`absolute bottom-3 rounded-xl object-cover ring-1 ring-white/25 ${settings.mapSide === "direita" ? "right-3" : "left-3"}`}
                 style={{
                   height: `${6 * SIZE_FACTOR[settings.size]}rem`,
                   width: `${6 * SIZE_FACTOR[settings.size]}rem`,
@@ -427,20 +427,21 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
               />
             )}
             <div
-              className="absolute bottom-0 right-0 px-3 py-2 text-right font-semibold leading-snug text-white"
+              className="absolute bottom-3 right-3 rounded-xl px-3 py-2 text-right font-semibold leading-snug text-white ring-1 ring-white/15"
               style={{
                 fontSize: `${0.75 * SIZE_FACTOR[settings.size]}rem`,
                 backgroundColor: `rgba(0,0,0,${alpha})`,
               }}
             >
-              <div>
+              <div className="text-yellow-200">
                 <StampClock settings={settings} />
               </div>
               {lines.map((l) => (
                 <div key={l}>{l}</div>
               ))}
-              {coords && <div>{coords}</div>}
+              {coords && <div className="text-white/80">{coords}</div>}
             </div>
+
             {!landscape && (
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[11px] font-semibold text-white/60">
                 Vire o celular de lado
@@ -454,10 +455,20 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
       )}
 
-
-      {/* Área fixa (sempre de pé) mostrando a estaca que será carimbada na foto */}
+      {/* Todos os controles giram junto com a orientação do celular. */}
+      <div
+        className="absolute left-1/2 top-1/2 origin-center"
+        style={{
+          width: landscape ? "100dvw" : "100dvh",
+          height: landscape ? "100dvh" : "100dvw",
+          transform: `translate(-50%, -50%) rotate(${layoutRotation}deg) translateZ(0)`,
+          willChange: "transform",
+        }}
+      >
+      {/* Estaca que será carimbada na foto */}
       <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3">
-        <div className="flex items-center gap-2 rounded-full bg-slate-900/85 px-4 py-2">
+        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 shadow-lg">
+
           <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">
             Estaca na foto
           </span>
@@ -707,7 +718,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         )}
         <div className="w-16" />
       </div>
-
+      </div>
     </div>
+
   );
 }
