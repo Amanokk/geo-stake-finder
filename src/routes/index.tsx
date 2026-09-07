@@ -118,8 +118,8 @@ function balloonIcon(maps: unknown, text: string) {
   };
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new api.Size(w, h),
-    anchor: new api.Point(cx, 2 + boxH + tipH), // ponta do balão exatamente na estaca
+    scaledSize: new api.Size(w + 3, h + 2),
+    anchor: new api.Point(cx + 1.5, 2 + boxH + tipH + 1), // ponta do balão exatamente na estaca
   };
 }
 
