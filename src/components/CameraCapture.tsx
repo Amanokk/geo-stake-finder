@@ -720,6 +720,40 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
         </div>
       )}
 
+      {!shot && zoomRange && (
+        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/70 p-2 backdrop-blur">
+          <button
+            type="button"
+            aria-label="Aumentar zoom"
+            onClick={() => applyZoom(zoomVal + (zoomRange.step || 0.1) * 5)}
+            className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-yellow-300 active:scale-95"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </button>
+          <input
+            type="range"
+            aria-label="Zoom da câmera"
+            min={zoomRange.min}
+            max={zoomRange.max}
+            step={zoomRange.step || 0.1}
+            value={zoomVal}
+            onChange={(e) => applyZoom(Number(e.target.value))}
+            className="h-28 w-6 accent-yellow-300 [writing-mode:vertical-lr] [direction:rtl]"
+          />
+          <button
+            type="button"
+            aria-label="Diminuir zoom"
+            onClick={() => applyZoom(zoomVal - (zoomRange.step || 0.1) * 5)}
+            className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-yellow-300 active:scale-95"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </button>
+          <span className="text-[10px] font-bold tabular-nums text-white/80">
+            {zoomVal.toFixed(1)}x
+          </span>
+        </div>
+      )}
+
       <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 p-5">
         <button
           type="button"
