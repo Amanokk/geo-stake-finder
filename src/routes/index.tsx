@@ -99,13 +99,13 @@ function balloonIcon(maps: unknown, text: string) {
   const h = boxH + tipH + 4; // 4 = margem do stroke
   const r = 10;
   const cx = w / 2;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w + 3}" height="${h + 2}" viewBox="-1.5 -1 ${w + 3} ${h + 2}">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/>
     </linearGradient>
   </defs>
-  <g transform="translate(1.5,0.5)">
+  <g>
     <path d="M${r} 2 h${w - 2 * r} a${r} ${r} 0 0 1 ${r} ${r} v${boxH - 2 * r} a${r} ${r} 0 0 1 -${r} ${r} h-${cx - r - 9} l-9 ${tipH} l-9 -${tipH} h-${cx - r - 9} a${r} ${r} 0 0 1 -${r} -${r} v-${boxH - 2 * r} a${r} ${r} 0 0 1 ${r} -${r} z"
       fill="url(#g)" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round"/>
     <text x="${cx}" y="${2 + boxH / 2}" text-anchor="middle" dominant-baseline="central"
