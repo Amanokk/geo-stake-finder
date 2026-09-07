@@ -4,6 +4,8 @@ import { ArrowLeft, Check, Download, Pencil, Share2, Trash2 } from "lucide-react
 import { deletePhoto, listPhotos, putPhoto, retouchEstaca, type StoredPhoto } from "@/lib/photoStore";
 import { savePhoto, sharePhoto } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+
 
 export const Route = createFileRoute("/fotos")({
   head: () => ({
@@ -42,6 +44,8 @@ function FotosPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const online = useOnlineStatus();
+
 
   useEffect(() => {
     void listPhotos().then(setPhotos);
@@ -88,7 +92,13 @@ function FotosPage() {
             {photos ? `${photos.length} foto(s) salvas no aparelho` : "Carregando…"}
           </p>
         </div>
+        {!online && (
+          <span className="ml-auto rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300 ring-1 ring-amber-300/30">
+            Offline
+          </span>
+        )}
       </header>
+
 
       {status && <p className="px-4 pb-2 text-[12px] text-yellow-300">{status}</p>}
 
@@ -112,10 +122,15 @@ function FotosPage() {
                 <img
                   src={staticMapUrl(p.lat, p.lng)}
                   alt="Mapa da localização da foto"
-                  className="h-24 w-24 shrink-0 rounded-xl object-cover"
+                  className="h-24 w-24 shrink-0 rounded-xl bg-slate-800 object-cover"
                   loading="lazy"
+                  decoding="async"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
                 />
               )}
+
               <dl className="min-w-0 flex-1 space-y-0.5 text-[12px] text-slate-300">
                 <div className="text-base font-black text-yellow-300">{p.estaca ?? "Sem estaca"}</div>
                 <div className="truncate font-semibold text-white">{p.street ?? "Rua não identificada"}</div>
