@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings2, Share2, X } from "lucide-react";
+import { Settings2, Share2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { savePhoto, sharePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
 import { addPhotoLog } from "@/lib/photoLog";
@@ -53,6 +53,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const [status, setStatus] = useState<string | null>(null);
   const boxRef = useRef<{ x: number; y: number; w: number; h: number; fontSize: number } | null>(null);
   const stampDateRef = useRef<Date>(new Date());
+  const [zoomRange, setZoomRange] = useState<{ min: number; max: number; step: number } | null>(null);
+  const [zoomVal, setZoomVal] = useState(1);
 
   const [settings, setSettings] = useState<CameraSettings>(DEFAULT_CAMERA_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
