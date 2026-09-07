@@ -141,7 +141,32 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       // Segunda tentativa logo em seguida cobre o caso de autoplay negado.
       setTimeout(() => void v.play().catch(() => undefined), 150);
     }
+    // Detecta suporte a zoom óptico/digital da câmera (Android Chrome suporta).
+    const track = s.getVideoTracks()[0];
+    const caps = (track?.getCapabilities?.() ?? {}) as MediaTrackCapabilities & {
+      zoom?: { min: number; max: number; step: number };
+    };
+    if (caps.zoom && caps.zoom.max > caps.zoom.min) {
+      setZoomRange(caps.zoom);
+      const cur = (track.getSettings?.() as { zoom?: number } | undefined)?.zoom;
+      setZoomVal(cur ?? caps.zoom.min);
+    } else {
+      setZoomRange(null);
+    }
   }, [openStream]);
+
+  const applyZoom = useCallback(
+    (v: number) => {
+      const track = streamRef.current?.getVideoTracks()[0];
+      if (!track || !zoomRange) return;
+      const clamped = Math.min(zoomRange.max, Math.max(zoomRange.min, v));
+      setZoomVal(clamped);
+      void track
+        .applyConstraints({ advanced: [{ zoom: clamped } as MediaTrackConstraintSet] })
+        .catch(() => setZoomRange(null));
+    },
+    [zoomRange],
+  );
 
   useEffect(() => {
     let cancelled = false;
