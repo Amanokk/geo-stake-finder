@@ -105,7 +105,7 @@ function balloonIcon(maps: unknown, text: string) {
       <stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/>
     </linearGradient>
   </defs>
-  <g>
+  <g transform="translate(1.5,0.5)">
     <path d="M${r} 2 h${w - 2 * r} a${r} ${r} 0 0 1 ${r} ${r} v${boxH - 2 * r} a${r} ${r} 0 0 1 -${r} ${r} h-${cx - r - 9} l-9 ${tipH} l-9 -${tipH} h-${cx - r - 9} a${r} ${r} 0 0 1 -${r} -${r} v-${boxH - 2 * r} a${r} ${r} 0 0 1 ${r} -${r} z"
       fill="url(#g)" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round"/>
     <text x="${cx}" y="${2 + boxH / 2}" text-anchor="middle" dominant-baseline="central"
