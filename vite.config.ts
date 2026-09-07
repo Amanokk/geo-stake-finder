@@ -25,10 +25,13 @@ export default defineConfig({
         manifest: false,
         workbox: {
           globPatterns: ["**/*.{js,css,html,png,svg,webmanifest}"],
+          navigateFallback: "/",
           navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
+          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
+
           runtimeCaching: [
             {
               // Navegações HTML: rede primeiro, cache como reserva offline.
