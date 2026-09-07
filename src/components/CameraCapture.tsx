@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings2, Share2, X } from "lucide-react";
+import { Settings2, Share2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { savePhoto, sharePhoto, GALLERY_FOLDER } from "@/lib/savePhoto";
 import { addExif } from "@/lib/exif";
 import { addPhotoLog } from "@/lib/photoLog";
@@ -53,6 +53,8 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   const [status, setStatus] = useState<string | null>(null);
   const boxRef = useRef<{ x: number; y: number; w: number; h: number; fontSize: number } | null>(null);
   const stampDateRef = useRef<Date>(new Date());
+  const [zoomRange, setZoomRange] = useState<{ min: number; max: number; step: number } | null>(null);
+  const [zoomVal, setZoomVal] = useState(1);
 
   const [settings, setSettings] = useState<CameraSettings>(DEFAULT_CAMERA_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
@@ -139,7 +141,32 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       // Segunda tentativa logo em seguida cobre o caso de autoplay negado.
       setTimeout(() => void v.play().catch(() => undefined), 150);
     }
+    // Detecta suporte a zoom óptico/digital da câmera (Android Chrome suporta).
+    const track = s.getVideoTracks()[0];
+    const caps = (track?.getCapabilities?.() ?? {}) as MediaTrackCapabilities & {
+      zoom?: { min: number; max: number; step: number };
+    };
+    if (caps.zoom && caps.zoom.max > caps.zoom.min) {
+      setZoomRange(caps.zoom);
+      const cur = (track.getSettings?.() as { zoom?: number } | undefined)?.zoom;
+      setZoomVal(cur ?? caps.zoom.min);
+    } else {
+      setZoomRange(null);
+    }
   }, [openStream]);
+
+  const applyZoom = useCallback(
+    (v: number) => {
+      const track = streamRef.current?.getVideoTracks()[0];
+      if (!track || !zoomRange) return;
+      const clamped = Math.min(zoomRange.max, Math.max(zoomRange.min, v));
+      setZoomVal(clamped);
+      void track
+        .applyConstraints({ advanced: [{ zoom: clamped } as MediaTrackConstraintSet] })
+        .catch(() => setZoomRange(null));
+    },
+    [zoomRange],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -690,6 +717,40 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
             <span className="text-sm text-slate-400">.jpg</span>
           </div>
           {status && <p className="text-[11px] text-yellow-300">{status}</p>}
+        </div>
+      )}
+
+      {!shot && zoomRange && (
+        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/70 p-2 backdrop-blur">
+          <button
+            type="button"
+            aria-label="Aumentar zoom"
+            onClick={() => applyZoom(zoomVal + (zoomRange.step || 0.1) * 5)}
+            className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-yellow-300 active:scale-95"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </button>
+          <input
+            type="range"
+            aria-label="Zoom da câmera"
+            min={zoomRange.min}
+            max={zoomRange.max}
+            step={zoomRange.step || 0.1}
+            value={zoomVal}
+            onChange={(e) => applyZoom(Number(e.target.value))}
+            className="h-28 w-6 accent-yellow-300 [writing-mode:vertical-lr] [direction:rtl]"
+          />
+          <button
+            type="button"
+            aria-label="Diminuir zoom"
+            onClick={() => applyZoom(zoomVal - (zoomRange.step || 0.1) * 5)}
+            className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-yellow-300 active:scale-95"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </button>
+          <span className="text-[10px] font-bold tabular-nums text-white/80">
+            {zoomVal.toFixed(1)}x
+          </span>
         </div>
       )}
 

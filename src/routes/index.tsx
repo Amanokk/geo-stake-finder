@@ -86,21 +86,30 @@ function quantize(p: LatLng): string {
   return `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 }
 
-/** Balão de estaca desenhado em SVG (mais bonito que o círculo padrão). */
+/** Balão de estaca desenhado em SVG, com largura calculada para o texto caber
+    inteiro dentro da caixa (funciona até com estacas de 4 dígitos, ex: E-1127). */
 function balloonIcon(maps: unknown, text: string) {
-  const w = Math.max(64, 26 + text.length * 12);
-  const h = 54;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  const fontSize = 16;
+  // Largura estimada do texto em negrito: ~10px por caractere + respiros.
+  const textW = Math.ceil(text.length * 10.5);
+  const padX = 12;
+  const w = Math.max(56, textW + padX * 2);
+  const boxH = 32;
+  const tipH = 12;
+  const h = boxH + tipH + 4; // 4 = margem do stroke
+  const r = 10;
+  const cx = w / 2;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w + 3}" height="${h + 2}" viewBox="-1.5 -1 ${w + 3} ${h + 2}">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/>
     </linearGradient>
   </defs>
   <g>
-    <path d="M12 2 h${w - 24} a10 10 0 0 1 10 10 v16 a10 10 0 0 1 -10 10 h-${(w - 24) / 2 - 8} l-8 10 l-8 -10 h-${(w - 24) / 2 - 8} a10 10 0 0 1 -10 -10 v-16 a10 10 0 0 1 10 -10 z"
+    <path d="M${r} 2 h${w - 2 * r} a${r} ${r} 0 0 1 ${r} ${r} v${boxH - 2 * r} a${r} ${r} 0 0 1 -${r} ${r} h-${cx - r - 9} l-9 ${tipH} l-9 -${tipH} h-${cx - r - 9} a${r} ${r} 0 0 1 -${r} -${r} v-${boxH - 2 * r} a${r} ${r} 0 0 1 ${r} -${r} z"
       fill="url(#g)" stroke="#0f172a" stroke-width="2.5" stroke-linejoin="round"/>
-    <text x="${w / 2}" y="27" text-anchor="middle" dominant-baseline="middle"
-      font-family="system-ui, -apple-system, sans-serif" font-size="17" font-weight="800" fill="#0f172a">${text}</text>
+    <text x="${cx}" y="${2 + boxH / 2}" text-anchor="middle" dominant-baseline="central"
+      font-family="system-ui, -apple-system, sans-serif" font-size="${fontSize}" font-weight="800" fill="#0f172a">${text}</text>
   </g>
 </svg>`;
   const api = maps as {
@@ -109,8 +118,8 @@ function balloonIcon(maps: unknown, text: string) {
   };
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new api.Size(w, h),
-    anchor: new api.Point(w / 2, h),
+    scaledSize: new api.Size(w + 3, h + 2),
+    anchor: new api.Point(cx + 1.5, 2 + boxH + tipH + 1), // ponta do balão exatamente na estaca
   };
 }
 
