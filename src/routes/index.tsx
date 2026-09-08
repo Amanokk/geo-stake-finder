@@ -26,25 +26,16 @@ const STAKE_MIN_ZOOM = 16; // abaixo disso, nenhum marcador de estaca
 const MAX_VISIBLE_STAKES = 90; // teto duro para não travar em celular
 
 export const Route = createFileRoute("/")({
+  staticData: { sitemap: true },
   head: () => ({
     meta: [
-      { title: "Estaca GPS — Retiro São Joaquim" },
-      {
-        name: "description",
-        content:
-          "App de campo que mostra no mapa, pelo GPS, a rua e a estaca correta do projeto viário do bairro Retiro São Joaquim (Itaboraí/RJ).",
-      },
-      { property: "og:title", content: "Estaca GPS — Retiro São Joaquim" },
-      {
-        property: "og:description",
-        content: "App de campo que mostra no mapa, pelo GPS, a rua e a estaca correta do projeto viário do bairro Retiro São Joaquim (Itaboraí/RJ).",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://geo-stake-finder.lovable.app/" },
     ],
+    links: [{ rel: "canonical", href: "https://geo-stake-finder.lovable.app/" }],
   }),
   component: Index,
 });
+
 
 type Match = {
   street: Street;
