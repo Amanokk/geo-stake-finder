@@ -1,11 +1,11 @@
 import type { AnyRoute, AnyRouter, ParsedLocation } from "@tanstack/react-router";
 
 // Static sitemap URLs update automatically from each route's staticData.sitemap.
-// Fix missing decisions in the route itself.
+// The field is optional so MCP-generated routes (which don't declare it) typecheck.
 
 declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
-    sitemap: boolean | "exclude-subtree";
+    sitemap?: boolean | "exclude-subtree";
   }
 }
 
