@@ -8,6 +8,7 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 
 export const Route = createFileRoute("/fotos")({
+  staticData: { sitemap: true },
   head: () => ({
     meta: [
       { title: "Fotos capturadas — Estaca GPS" },
@@ -22,11 +23,14 @@ export const Route = createFileRoute("/fotos")({
         content: "Galeria das fotos do Estaca GPS com mapa, dados de GPS e retoque da estaca.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://geo-stake-finder.lovable.app/fotos" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://geo-stake-finder.lovable.app/fotos" }],
   }),
   component: FotosPage,
 });
+
 
 function staticMapUrl(lat: number, lng: number) {
   const key = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;

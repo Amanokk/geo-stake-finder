@@ -12,3 +12,6 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://geo-stake-finder.lovable.app/sitemap.xml
+
