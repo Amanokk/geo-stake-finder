@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "sdk_version": "2.0.4",
+  "path": "/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "joaquim-map-finder",
+      "version": "0.1.0",
+      "title": "Joaquim Map Finder"
+    },
+    "tools": [
+      {
+        "name": "list_streets",
+        "title": "Listar ruas",
+        "description": "Lista todas as ruas do bairro Retiro São Joaquim (Itaboraí-RJ) com a faixa de estacas e o comprimento aproximado do eixo.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_stakes",
+        "title": "Listar estacas de uma rua",
+        "description": "Lista todas as estacas de uma rua do bairro Retiro São Joaquim com suas coordenadas.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string",
+              "description": "Nome da rua (aceita parte do nome)."
+            }
+          },
+          "required": [
+            "street"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "find_stake",
+        "title": "Localizar estaca por coordenada",
+        "description": "Dada uma latitude/longitude, retorna a rua mais próxima do bairro Retiro São Joaquim e o número da estaca correspondente.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number",
+              "description": "Latitude em graus decimais (WGS84)."
+            },
+            "lng": {
+              "type": "number",
+              "description": "Longitude em graus decimais (WGS84)."
+            },
+            "maxDistanceM": {
+              "description": "Distância máxima do eixo da rua, em metros. Padrão: 60.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "lat",
+            "lng"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "stake_location",
+        "title": "Coordenada de uma estaca",
+        "description": "Retorna a latitude/longitude de uma estaca específica de uma rua do bairro Retiro São Joaquim.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string",
+              "description": "Nome da rua (aceita parte do nome, ex.: 'Ângelo Buriche')."
+            },
+            "stake": {
+              "type": "number",
+              "description": "Número da estaca, ex.: 1127."
+            }
+          },
+          "required": [
+            "street",
+            "stake"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
