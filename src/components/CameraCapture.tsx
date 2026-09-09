@@ -109,16 +109,15 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
 
   const openStream = useCallback(async () => {
-    // Pede a resolução máxima do sensor em 4:3. Resoluções fixas menores
-    // (ex.: 1920) fazem alguns celulares recortarem o sensor, o que aparece
-    // como "zoom" na prévia e perde qualidade. Com ideal alto o navegador
-    // escolhe a maior resolução disponível = campo de visão total da lente.
+    // 4:3 mantém o campo de visão total da lente (sem recorte = sem "zoom").
+    // A prévia roda em resolução moderada: pedir 12 MP travava o celular.
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: { ideal: "environment" },
         aspectRatio: { ideal: 4 / 3 },
-        width: { ideal: 4000 },
-        height: { ideal: 3000 },
+        width: { ideal: 1920 },
+        height: { ideal: 1440 },
+        frameRate: { ideal: 30, max: 30 },
       },
       audio: false,
     });
@@ -126,85 +125,96 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     return stream;
   }, []);
 
-  // Reanexa o stream ao <video> com força total: alguns celulares congelam a
-  // prévia quando o elemento fica invisível, então reatribuímos o srcObject
-  // e chamamos play() de novo. Se a trilha morreu, reabrimos a câmera.
+
+  // Reanexa o stream ao <video> só quando precisa: reatribuir o srcObject a
+  // cada render fazia a prévia engasgar. Se a trilha morreu, reabre a câmera.
+  const attachingRef = useRef(false);
   const attachStream = useCallback(async () => {
     const v = videoRef.current;
-    if (!v) return;
-    let s = streamRef.current;
-    if (!s || !s.getVideoTracks().some((t) => t.readyState === "live")) {
-      try {
-        s = await openStream();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Não foi possível abrir a câmera.");
-        return;
-      }
-    }
-    v.srcObject = null;
-    v.srcObject = s;
-    v.muted = true;
+    if (!v || attachingRef.current) return;
+    attachingRef.current = true;
     try {
-      await v.play();
-    } catch {
-      // Segunda tentativa logo em seguida cobre o caso de autoplay negado.
-      setTimeout(() => void v.play().catch(() => undefined), 150);
-    }
-    // Detecta suporte a zoom óptico/digital da câmera (Android Chrome suporta).
-    const track = s.getVideoTracks()[0];
-    const caps = (track?.getCapabilities?.() ?? {}) as MediaTrackCapabilities & {
-      zoom?: { min: number; max: number; step: number };
-    };
-    if (caps.zoom && caps.zoom.max > caps.zoom.min) {
-      setZoomRange(caps.zoom);
-      // Sempre começa no zoom mínimo (lente toda aberta, sem corte digital).
-      setZoomVal(caps.zoom.min);
-      void track
-        .applyConstraints({ advanced: [{ zoom: caps.zoom.min } as MediaTrackConstraintSet] })
-        .catch(() => undefined);
-    } else {
-      setZoomRange(null);
+      let s = streamRef.current;
+      const alive = !!s && s.getVideoTracks().some((t) => t.readyState === "live");
+      if (!alive) {
+        try {
+          s = await openStream();
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "Não foi possível abrir a câmera.");
+          return;
+        }
+      }
+      if (v.srcObject !== s) {
+        v.srcObject = s;
+        v.muted = true;
+      }
+      if (v.paused) {
+        try {
+          await v.play();
+        } catch {
+          setTimeout(() => void v.play().catch(() => undefined), 150);
+        }
+      }
+      // Zoom só é lido uma vez por stream (getCapabilities é caro em alguns aparelhos).
+      if (!alive) {
+        const track = s!.getVideoTracks()[0];
+        const caps = (track?.getCapabilities?.() ?? {}) as MediaTrackCapabilities & {
+          zoom?: { min: number; max: number; step: number };
+        };
+        if (caps.zoom && caps.zoom.max > caps.zoom.min) {
+          setZoomRange(caps.zoom);
+          setZoomVal(caps.zoom.min);
+          void track
+            .applyConstraints({ advanced: [{ zoom: caps.zoom.min } as MediaTrackConstraintSet] })
+            .catch(() => undefined);
+        } else {
+          setZoomRange(null);
+        }
+      }
+    } finally {
+      attachingRef.current = false;
     }
   }, [openStream]);
 
+  // O slider dispara dezenas de eventos por segundo; aplicar cada um na câmera
+  // engasga a prévia. O valor na tela muda na hora, a lente segue em rAF.
+  const zoomFrameRef = useRef<number | null>(null);
+  const pendingZoomRef = useRef<number | null>(null);
   const applyZoom = useCallback(
     (v: number) => {
-      const track = streamRef.current?.getVideoTracks()[0];
-      if (!track || !zoomRange) return;
+      if (!zoomRange) return;
       const clamped = Math.min(zoomRange.max, Math.max(zoomRange.min, v));
       setZoomVal(clamped);
-      void track
-        .applyConstraints({ advanced: [{ zoom: clamped } as MediaTrackConstraintSet] })
-        .catch(() => setZoomRange(null));
+      pendingZoomRef.current = clamped;
+      if (zoomFrameRef.current !== null) return;
+      zoomFrameRef.current = requestAnimationFrame(() => {
+        zoomFrameRef.current = null;
+        const track = streamRef.current?.getVideoTracks()[0];
+        const target = pendingZoomRef.current;
+        if (!track || target === null) return;
+        void track
+          .applyConstraints({ advanced: [{ zoom: target } as MediaTrackConstraintSet] })
+          .catch(() => setZoomRange(null));
+      });
     },
     [zoomRange],
   );
 
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const stream = await openStream();
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        await attachStream();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Não foi possível abrir a câmera.");
-      }
-    })();
+    void attachStream();
     return () => {
-      cancelled = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
-  }, [attachStream, openStream]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Ao voltar da foto tirada (Repetir), garante que a prévia volte a rodar.
   useEffect(() => {
     if (!shot) void attachStream();
   }, [shot, attachStream]);
+
 
 
 
@@ -733,7 +743,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       )}
 
       {!shot && zoomRange && (
-        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/70 p-2 backdrop-blur">
+        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/80 p-2">
           <button
             type="button"
             aria-label="Aumentar zoom"
