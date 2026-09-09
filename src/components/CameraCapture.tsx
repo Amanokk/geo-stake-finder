@@ -110,14 +110,15 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
   const openStream = useCallback(async () => {
     // 4:3 mantém o campo de visão total da lente (sem recorte = sem "zoom").
-    // A prévia roda em resolução moderada: pedir 12 MP travava o celular.
+    // A prévia roda em resolução BAIXA (lisa até em celular fraco); a foto em
+    // si é capturada na resolução total do sensor via ImageCapture (ver capture()).
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: { ideal: "environment" },
         aspectRatio: { ideal: 4 / 3 },
-        width: { ideal: 1920 },
-        height: { ideal: 1440 },
-        frameRate: { ideal: 30, max: 30 },
+        width: { ideal: 1280 },
+        height: { ideal: 960 },
+        frameRate: { ideal: 24, max: 30 },
       },
       audio: false,
     });
