@@ -176,18 +176,30 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     }
   }, [openStream]);
 
+  // O slider dispara dezenas de eventos por segundo; aplicar cada um na câmera
+  // engasga a prévia. O valor na tela muda na hora, a lente segue em rAF.
+  const zoomFrameRef = useRef<number | null>(null);
+  const pendingZoomRef = useRef<number | null>(null);
   const applyZoom = useCallback(
     (v: number) => {
-      const track = streamRef.current?.getVideoTracks()[0];
-      if (!track || !zoomRange) return;
+      if (!zoomRange) return;
       const clamped = Math.min(zoomRange.max, Math.max(zoomRange.min, v));
       setZoomVal(clamped);
-      void track
-        .applyConstraints({ advanced: [{ zoom: clamped } as MediaTrackConstraintSet] })
-        .catch(() => setZoomRange(null));
+      pendingZoomRef.current = clamped;
+      if (zoomFrameRef.current !== null) return;
+      zoomFrameRef.current = requestAnimationFrame(() => {
+        zoomFrameRef.current = null;
+        const track = streamRef.current?.getVideoTracks()[0];
+        const target = pendingZoomRef.current;
+        if (!track || target === null) return;
+        void track
+          .applyConstraints({ advanced: [{ zoom: target } as MediaTrackConstraintSet] })
+          .catch(() => setZoomRange(null));
+      });
     },
     [zoomRange],
   );
+
 
   useEffect(() => {
     void attachStream();
