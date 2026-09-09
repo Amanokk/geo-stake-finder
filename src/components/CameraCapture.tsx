@@ -110,14 +110,15 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
   const openStream = useCallback(async () => {
     // 4:3 mantém o campo de visão total da lente (sem recorte = sem "zoom").
-    // A prévia roda em resolução moderada: pedir 12 MP travava o celular.
+    // A prévia roda em resolução BAIXA (lisa até em celular fraco); a foto em
+    // si é capturada na resolução total do sensor via ImageCapture (ver capture()).
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: { ideal: "environment" },
         aspectRatio: { ideal: 4 / 3 },
-        width: { ideal: 1920 },
-        height: { ideal: 1440 },
-        frameRate: { ideal: 30, max: 30 },
+        width: { ideal: 1280 },
+        height: { ideal: 960 },
+        frameRate: { ideal: 24, max: 30 },
       },
       audio: false,
     });
@@ -129,6 +130,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   // Reanexa o stream ao <video> só quando precisa: reatribuir o srcObject a
   // cada render fazia a prévia engasgar. Se a trilha morreu, reabre a câmera.
   const attachingRef = useRef(false);
+  const imageCaptureRef = useRef<ImageCapture | null>(null);
   const attachStream = useCallback(async () => {
     const v = videoRef.current;
     if (!v || attachingRef.current) return;
@@ -143,6 +145,13 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           setError(e instanceof Error ? e.message : "Não foi possível abrir a câmera.");
           return;
         }
+      }
+      // ImageCapture fotografa o sensor na resolução total, independente da
+      // prévia leve — assim a foto sai nítida sem a câmera travar.
+      if (!alive) {
+        const track0 = s!.getVideoTracks()[0];
+        imageCaptureRef.current =
+          typeof ImageCapture !== "undefined" && track0 ? new ImageCapture(track0) : null;
       }
       if (v.srcObject !== s) {
         v.srcObject = s;
@@ -234,11 +243,30 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   );
   const alpha = Math.min(1, Math.max(0, settings.opacity ?? 0.75));
 
-  const capture = useCallback(() => {
-    const video = videoRef.current;
-    if (!video || !video.videoWidth) return;
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
+  const capture = useCallback(async () => {
+    // Fonte da foto: resolução total do sensor via ImageCapture (a prévia é
+    // leve de propósito). Se o aparelho não suportar, cai no quadro do vídeo.
+    let source: CanvasImageSource | null = null;
+    let vw = 0;
+    let vh = 0;
+    const ic = imageCaptureRef.current;
+    if (ic) {
+      try {
+        const bmp = await createImageBitmap(await ic.takePhoto());
+        source = bmp;
+        vw = bmp.width;
+        vh = bmp.height;
+      } catch {
+        source = null;
+      }
+    }
+    if (!source) {
+      const video = videoRef.current;
+      if (!video || !video.videoWidth) return;
+      source = video;
+      vw = video.videoWidth;
+      vh = video.videoHeight;
+    }
     const portrait = vh > vw;
     // A foto sai sempre deitada (paisagem), independentemente de como o
     // celular estiver: giramos o quadro conforme a orientação da tela.
