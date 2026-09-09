@@ -109,8 +109,17 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
 
   const openStream = useCallback(async () => {
+    // Pede a resolução máxima do sensor em 4:3. Resoluções fixas menores
+    // (ex.: 1920) fazem alguns celulares recortarem o sensor, o que aparece
+    // como "zoom" na prévia e perde qualidade. Com ideal alto o navegador
+    // escolhe a maior resolução disponível = campo de visão total da lente.
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } },
+      video: {
+        facingMode: { ideal: "environment" },
+        aspectRatio: { ideal: 4 / 3 },
+        width: { ideal: 4000 },
+        height: { ideal: 3000 },
+      },
       audio: false,
     });
     streamRef.current = stream;
@@ -148,8 +157,11 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
     if (caps.zoom && caps.zoom.max > caps.zoom.min) {
       setZoomRange(caps.zoom);
-      const cur = (track.getSettings?.() as { zoom?: number } | undefined)?.zoom;
-      setZoomVal(cur ?? caps.zoom.min);
+      // Sempre começa no zoom mínimo (lente toda aberta, sem corte digital).
+      setZoomVal(caps.zoom.min);
+      void track
+        .applyConstraints({ advanced: [{ zoom: caps.zoom.min } as MediaTrackConstraintSet] })
+        .catch(() => undefined);
     } else {
       setZoomRange(null);
     }
