@@ -130,6 +130,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
   // Reanexa o stream ao <video> só quando precisa: reatribuir o srcObject a
   // cada render fazia a prévia engasgar. Se a trilha morreu, reabre a câmera.
   const attachingRef = useRef(false);
+  const imageCaptureRef = useRef<ImageCapture | null>(null);
   const attachStream = useCallback(async () => {
     const v = videoRef.current;
     if (!v || attachingRef.current) return;
@@ -144,6 +145,13 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
           setError(e instanceof Error ? e.message : "Não foi possível abrir a câmera.");
           return;
         }
+      }
+      // ImageCapture fotografa o sensor na resolução total, independente da
+      // prévia leve — assim a foto sai nítida sem a câmera travar.
+      if (!alive) {
+        const track0 = s!.getVideoTracks()[0];
+        imageCaptureRef.current =
+          typeof ImageCapture !== "undefined" && track0 ? new ImageCapture(track0) : null;
       }
       if (v.srcObject !== s) {
         v.srcObject = s;
