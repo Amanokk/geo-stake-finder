@@ -731,7 +731,7 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
       )}
 
       {!shot && zoomRange && (
-        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/70 p-2 backdrop-blur">
+        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/80 p-2">
           <button
             type="button"
             aria-label="Aumentar zoom"
