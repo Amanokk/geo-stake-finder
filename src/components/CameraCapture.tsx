@@ -157,8 +157,11 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
     };
     if (caps.zoom && caps.zoom.max > caps.zoom.min) {
       setZoomRange(caps.zoom);
-      const cur = (track.getSettings?.() as { zoom?: number } | undefined)?.zoom;
-      setZoomVal(cur ?? caps.zoom.min);
+      // Sempre começa no zoom mínimo (lente toda aberta, sem corte digital).
+      setZoomVal(caps.zoom.min);
+      void track
+        .applyConstraints({ advanced: [{ zoom: caps.zoom.min } as MediaTrackConstraintSet] })
+        .catch(() => undefined);
     } else {
       setZoomRange(null);
     }
