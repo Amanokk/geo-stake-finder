@@ -109,22 +109,22 @@ export function CameraCapture({ stamp, onClose }: { stamp: CameraStamp; onClose:
 
 
   const openStream = useCallback(async () => {
-    // Pede a resolução máxima do sensor em 4:3. Resoluções fixas menores
-    // (ex.: 1920) fazem alguns celulares recortarem o sensor, o que aparece
-    // como "zoom" na prévia e perde qualidade. Com ideal alto o navegador
-    // escolhe a maior resolução disponível = campo de visão total da lente.
+    // 4:3 mantém o campo de visão total da lente (sem recorte = sem "zoom").
+    // A prévia roda em resolução moderada: pedir 12 MP travava o celular.
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: { ideal: "environment" },
         aspectRatio: { ideal: 4 / 3 },
-        width: { ideal: 4000 },
-        height: { ideal: 3000 },
+        width: { ideal: 1920 },
+        height: { ideal: 1440 },
+        frameRate: { ideal: 30, max: 30 },
       },
       audio: false,
     });
     streamRef.current = stream;
     return stream;
   }, []);
+
 
   // Reanexa o stream ao <video> com força total: alguns celulares congelam a
   // prévia quando o elemento fica invisível, então reatribuímos o srcObject
